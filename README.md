@@ -1,7 +1,7 @@
 Ember API Store
 ---------------
 
-Storage adapter for [http://emberjs.com](Ember) to [http://github.com/rancherio/api-spec](compatible APIs).
+Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancherio/api-spec).
 
 ## Installation
 ```bash
