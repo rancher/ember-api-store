@@ -1,5 +1,5 @@
-import Store from 'ember-api-store/store';
 import Ember from 'ember';
+import Store from 'ember-api-store/store';
 import Collection from 'ember-api-store/models/collection';
 import Resource from 'ember-api-store/models/resource';
 

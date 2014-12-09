@@ -1,6 +1,6 @@
 import Ember from 'ember';
-import Serializable from 'ember-api-store/mixins/serializable';
-import ApiError from 'ember-api-store/models/error';
+import Serializable from './mixins/serializable';
+import ApiError from './models/error';
 
 var Store = Ember.Object.extend({
   baseUrl: '/v1',

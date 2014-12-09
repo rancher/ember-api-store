@@ -7,33 +7,13 @@ Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://gith
 ```bash
   npm install --save-dev ember-api-store
 ```
-
-Create an initializer in your application:
-```javascript
-  export function initialize(container, application) {
-    import Store from "ember-api-store";
-    var store = Store.create({
-      baseUrl: '/v1'
-      container: container
-    });
-
-    application.register('store:main', store, {instantiate: false});
-    application.inject('controller', 'store', 'store:main');
-    application.inject('route', 'store', 'store:main');
-    application.inject('model', 'store', 'store:main');
-  }
-
-  export default {
-    name: 'store',
-    initialize: initialize
-  };
-```
-
 ## Usage
 
 ### Store
 
 The store performs all communication with the API service and maintains a single copy of all the resources that come back from it.  This ensures that changes to a resource in one place propagate propertly to other parts of your application that use the same resource.
+
+A property named `store` is automatically injected into all routes, controllers, and models on initialization.
 
 Methods:
 * `find(type [,id] [,options])`: Query API for records of `type`, optionally with `id` and other `options` like `filter` and `include`.  Returns a promise.
