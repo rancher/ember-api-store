@@ -21,42 +21,112 @@ var Store = Ember.Object.extend({
   // Asynchronous, returns promise.
   // find(type[,opt]): Query API for all records of [type]
   // find(type,id[,opt]): Query API for record [id] of [type]
+  // opt:
+  //  filter: Filter by fields, e.g. {field: value, anotherField: anotherValue} (default: none)
+  //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
+  //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
+  //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
+  //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
+    var self = this;
     opt = opt || {};
-    var url = type + (id ? '/'+encodeURIComponent(id) : '');
+    opt.depaginate = opt.depaginate !== false;
 
-    // @TODO friendly support for modifiers
-    if ( opt.filter )
+    if ( !type )
     {
-      var keys = Object.keys(opt.filter);
-      keys.forEach(function(key) {
-        var vals = opt.filter[key];
-        if ( !Ember.isArray(vals) )
-        {
-          vals = [vals];
-        }
+      return Ember.RSVP.reject(new ApiError('type not specified'));
+    }
 
-        vals.forEach(function(val) {
-          url += (url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(val);
-        });
+    // If this is a request for all of the items of [type], then we'll remember that and not ask again for a subsequent request
+    var isForAll = !id && opt.depaginate && !opt.filter && !opt.include;
+
+    // See if we already have this resource, unless forceReload is on.
+    if ( opt.forceReload !== true )
+    {
+      if ( isForAll && self.get('_foundAll').get(type) )
+      {
+        return Ember.RSVP.resolve(self.all(type),'Cached find all '+type);
+      }
+      else if ( !isForAll && id )
+      {
+        var existing = self.getById(type,id);
+        if ( existing )
+        {
+          return Ember.RSVP.resolve(existing,'Cached find '+type+':'+id);
+        }
+      }
+    }
+
+    // If URL is explicitly given, go straight to making the request.  Do not pass go, do not collect $200.
+    // This is used for bootstraping to load the schema initially, and shouldn't be used for much else.
+    if ( opt.url )
+    {
+      return findWithUrl(opt.url);
+    }
+    else
+    {
+      // Otherwise lookup the schema for the type and generate the URL based on it.
+      return self.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then(function(schema) {
+        var url = schema.linkFor('collection') + (id ? '/'+encodeURIComponent(id) : '');
+        return findWithUrl(url);
       });
     }
 
-    if ( opt.include )
-    {
-      if ( !Ember.isArray(opt.include) )
+    function findWithUrl(url) {
+      // Filter
+      // @TODO friendly support for modifiers
+      if ( opt.filter )
       {
-        opt.include = [opt.include];
+        var keys = Object.keys(opt.filter);
+        keys.forEach(function(key) {
+          var vals = opt.filter[key];
+          if ( !Ember.isArray(vals) )
+          {
+            vals = [vals];
+          }
+
+          vals.forEach(function(val) {
+            url += (url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(val);
+          });
+        });
+      }
+      // End: Filter
+
+      // Include
+      if ( opt.include )
+      {
+        if ( !Ember.isArray(opt.include) )
+        {
+          opt.include = [opt.include];
+        }
+      }
+      else
+      {
+        opt.include = [];
+      }
+
+      var cls = self.get('container').lookup('model:'+type);
+      if ( cls && cls.constructor.alwaysInclude )
+      {
+        opt.include.addObjects(cls.constructor.alwaysInclude);
       }
 
       opt.include.forEach(function(key) {
         url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
       });
-    }
+      // End: Include
 
-    return this.request({
-      url: url
-    });
+      return self.request({
+        url: url,
+        depaginate: opt.depaginate
+      }).then(function(result) {
+        if ( isForAll )
+        {
+          self.get('_foundAll').set(type,true);
+        }
+        return result;
+      });
+    }
   },
 
   // Returns a 'live' array of all records of [type] in the cache.
@@ -104,7 +174,6 @@ var Store = Ember.Object.extend({
     }
 
     var output = cls.constructor.create(data);
-    output.set('store', this);
 
     // If the new record has an ID and self link, add it to the store.
     // Otherwise, don't and save() will add it later if it's ever persisted.
@@ -179,7 +248,7 @@ var Store = Ember.Object.extend({
       function fail(xhr, textStatus, err) {
         reject({xhr: xhr, textStatus: textStatus, err: err});
       }
-    });
+    },'Raw AJAX Request: '+url);
 
     return promise;
   },
@@ -255,7 +324,7 @@ var Store = Ember.Object.extend({
           self.get('container').lookup('controller:application').send('timedOut');
         }
       }
-    });
+    },'Request: '+ opt.url);
 
     return promise;
   },
@@ -263,13 +332,16 @@ var Store = Ember.Object.extend({
   // ---------
 
   _cache: null,
+  _foundAll: null,
 
   init: function() {
     this.set('_cache', Ember.Object.create());
+    this.set('_foundAll', Ember.Object.create());
   },
 
   // Get the cache group for [type]
   _group: function(type) {
+    type = type.dasherize();
     var cache = this.get('_cache');
     var group = cache.get(type);
     if ( !group )
@@ -283,12 +355,14 @@ var Store = Ember.Object.extend({
 
   // Add a record instance of [type] to cache
   _add: function(type, obj) {
+    type = type.dasherize();
     var group = this._group(type);
     group.pushObject(obj);
   },
 
   // Remove a record of [type] form cache, given the id or the record instance.
   _remove: function(type, obj) {
+    type = type.dasherize();
     var group = this._group(type);
     group.removeObject(obj);
   },
@@ -298,14 +372,15 @@ var Store = Ember.Object.extend({
   // The value in the output for the key will be the value returned.
   // If no value is returned, the key will not be included in the output.
   _typeify: function(key, input) {
+
     // Basic values can be returned unmodified
-    if ( !input || typeof input !== 'object' || Ember.isArray(input) )
+    if ( !input || typeof input !== 'object' || Ember.isArray(input) || !input.links )
     {
       return input;
     }
 
     var type = input.type;
-    if ( !type )
+    if ( !type || typeof type !== 'string' )
     {
       return Ember.Object.create(input);
     }

@@ -27,11 +27,11 @@ test('it stores properties', function() {
 test('it has a toString', function() {
   var subject = Resource.create({
     id: 42,
-    type: 'resource',
+    type: 'thing',
   });
 
-  qunit.equal(subject, 'model:resource:42', 'implicit string works');
-  qunit.equal(subject+'', 'model:resource:42', 'explicit string works');
+  qunit.equal(subject+'', 'resource:thing:42', 'implicit string works');
+  qunit.equal(subject.toString(),'resource:thing:42', 'explicit string works');
 });
 
 test('it merges', function() {

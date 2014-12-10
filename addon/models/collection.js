@@ -11,7 +11,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
   sortLinks: null,
 
   toString: function() {
-    return 'collection:'+ this.get('firstObject.type') + '[' + this.get('length') + ']';
+    return 'collection:'+ this.get('resourceType') + '[' + this.get('length') + ']';
   },
 
   depaginate: function(depth) {
@@ -82,7 +82,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
         //console.log('Depaginate fail',body);
         reject(body);
       }
-    },'Depaginating, depth='+depth);
+    },'Depaginate, depth '+depth);
 
     return promise;
   },

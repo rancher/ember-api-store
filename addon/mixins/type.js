@@ -42,7 +42,8 @@ var Type = Ember.Mixin.create(Serializable,{
     // Remove values that are in current but not new.
     var newKeys = newData.allKeys();
     this.eachKeys(function(v, k) {
-      if ( newKeys.indexOf(k) === -1 )
+      // Don't remove keys which are valid link names, because this may be an updated copy of the resource without those includes.
+      if ( newKeys.indexOf(k) === -1 && !this.hasLink(k) )
       {
         self.set(k, undefined);
       }
@@ -53,13 +54,17 @@ var Type = Ember.Mixin.create(Serializable,{
 
   clone: function() {
     var output = this.constructor.create(this.serialize());
-    output.set('_store', this.get('_store'));
+    //output.set('store', this.get('store'));
     return output;
   },
 
-  hasLink: function(name) {
+  linkFor: function(name) {
     var url = this.get('links.'+name);
-    return !!url;
+    return url;
+  },
+
+  hasLink: function(name) {
+    return !!this.linkFor(name);
   },
 
   followLink: function(name, opt) {
@@ -83,7 +88,7 @@ var Type = Ember.Mixin.create(Serializable,{
       });
     }
 
-    return this._store.request({
+    return this.get('store').request({
       method: 'GET',
       url: url
     });
@@ -100,7 +105,7 @@ var Type = Ember.Mixin.create(Serializable,{
       }).catch(function(err) {
         reject(err);
       });
-    });
+    },'Import Link: '+name);
   },
 
   hasAction: function(name) {
@@ -115,7 +120,7 @@ var Type = Ember.Mixin.create(Serializable,{
       return Ember.RSVP.reject(new Error('Unknown action: ' + name));
     }
 
-    return this.get('_store').request({
+    return this.get('store').request({
       method: 'POST',
       url: url,
       data: data
@@ -153,7 +158,7 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['links'];
     delete json['actions'];
 
-    var store = this.get('_store');
+    var store = this.get('store');
 
     return store.request({
       method: method,
@@ -182,10 +187,10 @@ var Type = Ember.Mixin.create(Serializable,{
 
   delete: function() {
     var self = this;
-    var store = this.get('_store');
+    var store = this.get('store');
     var type = this.get('type');
 
-    return this.get('_store').request({
+    return this.get('store').request({
       method: 'DELETE',
       url: this.get('links.self')
     }).then(function(newData) {
