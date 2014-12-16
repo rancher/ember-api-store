@@ -20,8 +20,15 @@ Methods:
 * `getById(type, id)`: Get a record from the local cache by `type` and `id`.  Returns a resource or undefined synchronously.
 * `hasRecordFor(type, id)`: Returns true if a record for `type` and `id` exists in cache synchronously.
 * `all(type)`: Returns a "live" array of all the records for [type] in the store.  The array will be updated as records are added and removed from the store.
-* `createRecord(data)`: Create a record given fields `data`.  If the data contains an id and a self link, it is added to the store.  Otherwise you must call `.save()` to add to the store.  Returns a `Resource`.
-* `removeRecord(type, id)`: Remove a record from the store given `type` and `id.  Calls `.delete()`  on the record and does not remove until it succeeds.  Returns a promise.
+* `findAll(type)`: Calls `find(type)` if it hasn't been called before, then returns `all(type)` to give you back a live list of all the records in one call.  Convenient for a model hook.
+* `createRecord(data)`: Create a record given fields `data`.  Returns a `Resource`.  Does **not** add the record to the store, call `resource.save()` on the response or `\_add()` on the store.
+
+More methods, that you shouldn't need often:
+* `\_add(type, obj)`: Add a record to the store.  This is normally done automatically when reading objects, but you might have created one with `createRecord` manually want it added without `resource.save()`.
+* `\_remove(type, obj)`: Remove a record from the store.  This doesn't tell the server about it, so you probably want `resource.delete()`.
+
+Properties:
+* `removeAfterDelete: true`: Set to false to disable automatically removing from the store after `record.delete()`.  You might want this if your API has a 2-step deleted vs purged state.
 
 ### Resource
 A resource is a model object representing a single resource in the API.
@@ -38,6 +45,9 @@ Methods:
 * `.save()`: Sends the resource to the API to persist it.  On success, adds the resource to the store if it wasn't already in there.  Returns a promise that resolves to the resource, and also updates the store record with the response data if it is provided.
 * `.delete()`: Sends a delete request to the API to remove a resource.  On success, the resource is removed from the store if it was in it.
 * `.serialize()`: Returns a plain JavaScript object representation of the resource.
+
+Static Properties:
+* `alwaysInclude: []`: An array of fields to always request be included when making requests for this tyep of resource.
 
 ### Collection
 A collection is a model object representing an array of resources in the API.  It is an ArrayProxy that proxies array requests to the `data` elements of the collection, but collections are themselves resources that may have links and actions themselves that you can use (as a resource, above).

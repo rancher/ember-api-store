@@ -6,9 +6,17 @@ var Store = Ember.Object.extend({
   baseUrl: '/v1',
   metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','sort','sortLinks'],
 
+  // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
+  removeAfterDelete: true,
+
+  normalizeType: function(type) {
+    return type.toLowerCase();
+  },
+
   // Synchronously get record from local cache by [type] and [id].
   // Returns undefined if the record is not in cache, does not talk to API. 
   getById: function(type, id) {
+    type = this.normalizeType(type);
     var group = this._group(type);
     return group.filterProperty('id',id)[0];
   },
@@ -29,6 +37,7 @@ var Store = Ember.Object.extend({
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
     var self = this;
+    type = this.normalizeType(type);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
 
@@ -131,12 +140,35 @@ var Store = Ember.Object.extend({
 
   // Returns a 'live' array of all records of [type] in the cache.
   all: function(type) {
+    type = this.normalizeType(type);
     var group = this._group(type);
     var proxy = Ember.ArrayProxy.create({
       content: group
     });
 
     return proxy;
+  },
+
+  haveAll: function(type) {
+    type = this.normalizeType(type);
+    return this.get('_foundAll').get(type);
+  },
+
+  // find(type) && return all(type)
+  findAll: function(type) {
+    type = this.normalizeType(type);
+    var self = this;
+
+    if ( self.haveAll(type) )
+    {
+      return Ember.RSVP.resolve(self.all(type),'All '+ type + ' already cached');
+    }
+    else
+    {
+      return this.find(type).then(function() {
+        return self.all(type);
+      });
+    }
   },
 
   // Create a collection
@@ -153,8 +185,8 @@ var Store = Ember.Object.extend({
 
   // Create a record, but do not insert into the cache
   createRecord: function(data) {
-    var kind = (data.kind||'').dasherize();
-    var type = (data.type||'').dasherize();
+    var kind = this.normalizeType(data.kind||'');
+    var type = this.normalizeType(data.type||'');
     var container = this.get('container');
     var cls;
 
@@ -174,30 +206,7 @@ var Store = Ember.Object.extend({
     }
 
     var output = cls.constructor.create(data);
-
-    // If the new record has an ID and self link, add it to the store.
-    // Otherwise, don't and save() will add it later if it's ever persisted.
-    if ( output.get('id') && output.hasLink('self') )
-    {
-      this._add(type, output);
-    }
-
     return output;
-  },
-
-  removeRecord: function(type, id) {
-    var self = this;
-    var obj = this.getById(type, id);
-
-    if ( !obj )
-    {
-      return Ember.RSVP.reject(new ApiError('Record not found'));
-    }
-
-    return obj.delete().then(function() {
-      self._remove(type, id);
-      return obj;
-    });
   },
 
   // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
@@ -241,12 +250,12 @@ var Store = Ember.Object.extend({
       function success(body, textStatus, xhr) {
         if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
         {
-          resolve({xhr: xhr, textStatus: textStatus});
+          resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
         }
       }
 
       function fail(xhr, textStatus, err) {
-        reject({xhr: xhr, textStatus: textStatus, err: err});
+        reject({xhr: xhr, textStatus: textStatus, err: err}, 'AJAX Error:' + url + '(' + xhr.status + ')');
       }
     },'Raw AJAX Request: '+url);
 
@@ -341,7 +350,7 @@ var Store = Ember.Object.extend({
 
   // Get the cache group for [type]
   _group: function(type) {
-    type = type.dasherize();
+    type = this.normalizeType(type);
     var cache = this.get('_cache');
     var group = cache.get(type);
     if ( !group )
@@ -355,14 +364,14 @@ var Store = Ember.Object.extend({
 
   // Add a record instance of [type] to cache
   _add: function(type, obj) {
-    type = type.dasherize();
+    type = this.normalizeType(type);
     var group = this._group(type);
     group.pushObject(obj);
   },
 
   // Remove a record of [type] form cache, given the id or the record instance.
   _remove: function(type, obj) {
-    type = type.dasherize();
+    type = this.normalizeType(type);
     var group = this._group(type);
     group.removeObject(obj);
   },
@@ -387,6 +396,7 @@ var Store = Ember.Object.extend({
 
     var self = this;
     var output;
+    type = this.normalizeType(type);
 
     if ( type === 'collection' )
     {

@@ -42,7 +42,7 @@ var Type = Ember.Mixin.create(Serializable,{
     // Remove values that are in current but not new.
     var newKeys = newData.allKeys();
     this.eachKeys(function(v, k) {
-      // Don't remove keys which are valid link names, because this may be an updated copy of the resource without those includes.
+      // If the key is a valid link name and 
       if ( newKeys.indexOf(k) === -1 && !this.hasLink(k) )
       {
         self.set(k, undefined);
@@ -113,6 +113,12 @@ var Type = Ember.Mixin.create(Serializable,{
     return !!url;
   },
 
+  computedHasAction: function(name) {
+    return Ember.computed('actions.'+name, function() {
+      return this.hasAction(name);
+    });
+  },
+
   doAction: function(name, data) {
     var url = this.get('actions.'+name);
     if (!url)
@@ -132,10 +138,12 @@ var Type = Ember.Mixin.create(Serializable,{
 
   save: function() {
     var self = this;
+    var store = this.get('store');
+
 
     var method, url;
     var id = this.get('id');
-    var type = this.get('type');
+    var type = store.normalizeType(this.get('type'));
     if ( id )
     {
       // Update
@@ -158,8 +166,6 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['links'];
     delete json['actions'];
 
-    var store = this.get('store');
-
     return store.request({
       method: method,
       url: url,
@@ -171,14 +177,20 @@ var Type = Ember.Mixin.create(Serializable,{
       }
 
       var newId = newData.get('id');
-      var newType = newData.get('type');
+      var newType = store.normalizeType(newData.get('type'));
       if ( !id && newId && type === newType )
       {
+        Ember.beginPropertyChanges();
         // A new record was created.  Typeify will have put it into the store,
         // but it's not the same instance as this object.  So we need to fix that.
         self.merge(newData);
-        store._remove(type, newId);
+        var existing = store.getById(type,newId);
+        if ( existing )
+        {
+          store._remove(type, existing);
+        }
         store._add(type, self);
+        Ember.endPropertyChanges();
       }
 
       return self;
@@ -194,7 +206,10 @@ var Type = Ember.Mixin.create(Serializable,{
       method: 'DELETE',
       url: this.get('links.self')
     }).then(function(newData) {
-      store._remove(type, self);
+      if ( store.get('removeAfterDelete') )
+      {
+        store._remove(type, self);
+      }
       return newData;
     });
   }
