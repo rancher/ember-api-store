@@ -188,16 +188,18 @@ var Store = Ember.Object.extend({
     var kind = this.normalizeType(data.kind||'');
     var type = this.normalizeType(data.type||'');
     var container = this.get('container');
-    var cls;
+    var cls, schema;
 
     if ( kind )
     {
       cls = container.lookup('model:'+kind);
+      schema = this.getById('schema',kind);
     }
 
     if ( !cls && type )
     {
       cls = container.lookup('model:'+type);
+      schema = this.getById('schema',type);
     }
 
     if ( !cls )
@@ -205,7 +207,23 @@ var Store = Ember.Object.extend({
       cls = container.lookup('model:resource');
     }
 
-    var output = cls.constructor.create(data);
+
+    var input;
+    if ( schema )
+    {
+      input = schema.getCreateDefaults(data);
+    }
+    else
+    {
+      input = data;
+    }
+
+    if ( typeof cls.constructor.mangleIn === 'function' )
+    {
+      input = cls.constructor.mangleIn(input);
+    }
+
+    var output = cls.constructor.create(input);
     return output;
   },
 
