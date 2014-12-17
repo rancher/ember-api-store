@@ -9,7 +9,7 @@ export default Resource.extend({
       var field = fields[key];
       var def = field['default'];
 
-      if ( field.create )
+      if ( field.create && def !== null )
       {
         if ( typeof def !== 'null' && typeof def !== 'undefined' )
         {
@@ -18,9 +18,12 @@ export default Resource.extend({
       }
     });
 
-    Object.keys(more).forEach(function(key) {
-      out[key] = more[key];
-    });
+    if ( more )
+    {
+      Object.keys(more).forEach(function(key) {
+        out[key] = more[key];
+      });
+    }
 
     return out;
   }

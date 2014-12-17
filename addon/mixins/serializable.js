@@ -1,7 +1,7 @@
 import Ember from 'ember';
 
 // Properties to ignore because they're built-in to ember, ember-debug, or the store
-var reserved = ['constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey'];
+var reserved = ['__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey'];
 
 var Serializable = Ember.Mixin.create({
   serialize: function() {
