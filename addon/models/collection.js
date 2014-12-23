@@ -33,7 +33,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
       if ( next )
       {
         console.log('Depaginate, requesting', next);
-        this.get('store').request({
+        self.get('store').request({
           method: 'GET',
           url: next,
           depaginate: false,
