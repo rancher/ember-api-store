@@ -14,7 +14,7 @@ var Resource = Ember.Object.extend(TypeMixin, {
   },
 
   serialize: function() {
-    var data = this._super();
+    var data = this._super.apply(this,arguments);
     if ( this.constructor.mangleOut )
     {
       return this.constructor.mangleOut(data);

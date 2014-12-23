@@ -4,30 +4,47 @@ import Ember from 'ember';
 var reserved = ['__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey'];
 
 var Serializable = Ember.Mixin.create({
-  serialize: function() {
+  serialize: function(depth) {
+    depth = depth || 0;
     var output;
+
+    if ( depth > 5 )
+    {
+      return null;
+    }
+
     if ( Ember.isArray(this) )
     {
-      output = this.map(recurse);
+      output = this.map(function(item) {
+        return recurse(item,depth+1);
+      });
     }
     else
     {
-      output = {};
-      this.eachSerializableKeys(function(v,k) {
-        output[k] = recurse(v);
+      output = this.constructor.create();
+      this.eachKeys(function(v,k) {
+        output.set(k, recurse(v,depth+1));
       });
     }
 
     return output;
 
-    function recurse(obj) {
+    function recurse(obj,depth) {
+      depth = depth || 0;
+      if ( depth > 5 )
+      {
+        return null;
+      }
+
       if ( Ember.isArray(obj) )
       {
-        return obj.map(recurse);
+        return obj.map(function(item) {
+          return recurse(item,depth+1);
+        });
       }
       else if ( Serializable.detect(obj) )
       {
-        return obj.serialize();
+        return obj.serialize(depth+1);
       }
       else
       {
@@ -51,20 +68,6 @@ var Serializable = Ember.Mixin.create({
   eachKeys: function(fn) {
     var self = this;
     this.allKeys().forEach(function(k) {
-      fn.call(self, self.get(k), k);
-    });
-  },
-
-  serializableKeys: function() {
-    var links = Object.keys(this.get('links')||{});
-    return this.allKeys().filter(function(item) {
-      return links.indexOf(item) === -1;
-    });
-  },
-
-  eachSerializableKeys: function(fn) {
-    var self = this;
-    this.serializableKeys().forEach(function(k) {
       fn.call(self, self.get(k), k);
     });
   },
