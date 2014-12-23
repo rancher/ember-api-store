@@ -5,6 +5,21 @@ var reserved = ['__nextSuper','constructor','container','store','isInstance','is
 
 var Serializable = Ember.Mixin.create({
   serialize: function() {
+    var output;
+    if ( Ember.isArray(this) )
+    {
+      output = this.map(recurse);
+    }
+    else
+    {
+      output = {};
+      this.eachSerializableKeys(function(v,k) {
+        output[k] = recurse(v);
+      });
+    }
+
+    return output;
+
     function recurse(obj) {
       if ( Ember.isArray(obj) )
       {
@@ -19,21 +34,6 @@ var Serializable = Ember.Mixin.create({
         return obj;
       }
     }
-
-    var output;
-    if ( Ember.isArray(this) )
-    {
-      output = this.map(recurse);
-    }
-    else
-    {
-      output = {};
-      this.eachKeys(function(v,k) {
-        output[k] = recurse(v);
-      });
-    }
-
-    return output;
   },
 
   allKeys: function() {
@@ -51,6 +51,20 @@ var Serializable = Ember.Mixin.create({
   eachKeys: function(fn) {
     var self = this;
     this.allKeys().forEach(function(k) {
+      fn.call(self, self.get(k), k);
+    });
+  },
+
+  serializableKeys: function() {
+    var links = Object.keys(this.get('links')||{});
+    return this.allKeys().filter(function(item) {
+      return links.indexOf(item) === -1;
+    });
+  },
+
+  eachSerializableKeys: function(fn) {
+    var self = this;
+    this.serializableKeys().forEach(function(k) {
       fn.call(self, self.get(k), k);
     });
   },

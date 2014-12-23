@@ -16,7 +16,7 @@ export default function(obj, data, isError, status)
     }
   };
 
-  var store = obj._store = mockStore();
+  var store = obj.store = mockStore();
 
   store.rawRequest = function() {
     if ( isError )

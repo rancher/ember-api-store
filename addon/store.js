@@ -356,14 +356,19 @@ var Store = Ember.Object.extend({
     return promise;
   },
 
+  // Forget about all the resources that hae been previously remembered.
+  reset: function() {
+    this.set('_cache', Ember.Object.create());
+    this.set('_foundAll', Ember.Object.create());
+  },
+
   // ---------
 
   _cache: null,
   _foundAll: null,
 
   init: function() {
-    this.set('_cache', Ember.Object.create());
-    this.set('_foundAll', Ember.Object.create());
+    this.reset();
   },
 
   // Get the cache group for [type]

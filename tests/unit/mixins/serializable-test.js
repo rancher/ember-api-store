@@ -138,6 +138,21 @@ test('it serializes nested arrays', function() {
   equal(JSON.stringify(output), JSON.stringify(expect), 'The JSON matches');
 });
 
+/*
+test('it handles circular references', function() {
+  var SerializableObject = Ember.Object.extend(SerializableMixin);
+  var subject = SerializableObject.create({name: 'a'});
+  var objB = SerializableObject.create({name: 'b', a: subject});
+  subject.set('b', objB);
+
+  var output = subject.serialize();
+  var expect = {name: 'a', b: {name: 'b'}};
+
+  ok(subject, 'The subject is defined');
+  equal(JSON.stringify(output), JSON.stringify(expect), 'The JSON matches');
+});
+*/
+
 test('allKeys', function() {
   var SerializableObject = Ember.Object.extend(SerializableMixin);
   var subject = SerializableObject.create({a: 1, b: 2, c: 3});
