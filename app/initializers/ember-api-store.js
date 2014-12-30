@@ -1,7 +1,6 @@
-import initializer from 'ember-api-store/initializers/schemas';
+import initializer from 'ember-api-store/initializers/ember-api-store';
 
 export default {
-  name: 'schemas',
-  after: 'ember-api-store',
+  name: 'ember-api-store',
   initialize: initializer
 }

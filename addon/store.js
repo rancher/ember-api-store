@@ -227,8 +227,54 @@ var Store = Ember.Object.extend({
     return output;
   },
 
+  headers: null,
+  _headers: function(perRequest) {
+    var out = {
+      'accept': 'application/json',
+    };
+
+    var csrf = Ember.$.cookie('CSRF');
+    if ( csrf )
+    {
+      out['x-api-csrf'] = csrf;
+    }
+
+    var more = this.get('headers');
+    if ( more )
+    {
+      Object.keys(more).forEach(function(key) {
+        var val = Ember.get(more,key);
+        if ( val === undefined )
+        {
+          delete out[key.toLowerCase()];
+        }
+        else
+        {
+          out[key.toLowerCase()] = val;
+        }
+      });
+    }
+
+    if ( perRequest )
+    {
+      Object.keys(perRequest).forEach(function(key) {
+        var val = Ember.get(perRequest,key);
+        if ( val === undefined )
+        {
+          delete out[key.toLowerCase()];
+        }
+        else
+        {
+          out[key.toLowerCase()] = val;
+        }
+      });
+    }
+
+    return out;
+  },
+
   // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
-  // This is separate from request() so it can be mocked for tests.
+  // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
   rawRequest: function(opt) {
     var url = opt.url;
     if ( url.indexOf('http') !== 0 && url.indexOf('/') !== 0 )
@@ -237,16 +283,9 @@ var Store = Ember.Object.extend({
     }
 
     opt.url = url;
-    opt.headers = opt.headers || {};
-    opt.headers['Accept'] = 'application/json';
+    opt.headers = this._headers(opt.headers);
     opt.processData = false;
     opt.dataType = 'text'; // Don't let jQuery JSON parse
-
-    var csrf = Ember.$.cookie('CSRF');
-    if ( csrf )
-    {
-      opt.headers['X-API-CSRF'] = csrf;
-    }
 
     if ( opt.data )
     {
@@ -345,11 +384,6 @@ var Store = Ember.Object.extend({
         Object.defineProperty(response, 'textStatus', { value: textStatus });
 
         reject(response);
-
-        if ( xhr.status === 401 )
-        {
-          self.get('container').lookup('controller:application').send('timedOut');
-        }
       }
     },'Request: '+ opt.url);
 
