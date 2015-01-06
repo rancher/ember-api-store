@@ -358,13 +358,13 @@ var Store = Ember.Object.extend({
         var err = obj.err;
         var textStatus = obj.textStatus;
 
-        if ( err )
-        {
-          body = {status: xhr.status, message: err};
-        }
-        else if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
+        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
         {
           body = JSON.parse(xhr.responseText, boundTypeify);
+        }
+        else if ( err )
+        {
+          body = {status: xhr.status, message: err};
         }
         else
         {
