@@ -1,5 +1,5 @@
 Ember API Store
----------------
+===============
 
 Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancherio/api-spec).
 
@@ -24,8 +24,8 @@ Methods:
 * `createRecord(data)`: Create a record given fields `data`.  Returns a `Resource`.  Does **not** add the record to the store, call `resource.save()` on the response or `\_add()` on the store.
 
 More methods, that you shouldn't need often:
-* `\_add(type, obj)`: Add a record to the store.  This is normally done automatically when reading objects, but you might have created one with `createRecord` manually want it added without `resource.save()`.
-* `\_remove(type, obj)`: Remove a record from the store.  This doesn't tell the server about it, so you probably want `resource.delete()`.
+* `_add(type, obj)`: Add a record to the store.  This is normally done automatically when reading objects, but you might have created one with `createRecord` manually want it added without `resource.save()`.
+* `_remove(type, obj)`: Remove a record from the store.  This doesn't tell the server about it, so you probably want `resource.delete()`.
 
 Properties:
 * `removeAfterDelete: true`: Set to false to disable automatically removing from the store after `record.delete()`.  You might want this if your API has a 2-step deleted vs purged state.
