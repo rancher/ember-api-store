@@ -305,10 +305,7 @@ var Store = Ember.Object.extend({
       Ember.$.ajax(opt).then(success,fail);
 
       function success(body, textStatus, xhr) {
-        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
-        {
-          resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
-        }
+        resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
       }
 
       function fail(xhr, textStatus, err) {
