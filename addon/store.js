@@ -125,6 +125,19 @@ var Store = Ember.Object.extend({
       });
       // End: Include
 
+      // Sort
+      var sortBy = opt.sortBy;
+      if ( !sortBy && cls)
+      {
+        sortBy = cls.constructor.defaultSortBy;
+      }
+
+      if ( sortBy )
+      {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'sort=' + encodeURIComponent(sortBy);
+      }
+      // End: Sort
+
       return self.request({
         url: url,
         depaginate: opt.depaginate
