@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import Serializable from './mixins/serializable';
 import ApiError from './models/error';
+import { normalizeType } from './utils/normalize';
 
 var Store = Ember.Object.extend({
   baseUrl: '/v1',
@@ -9,14 +10,10 @@ var Store = Ember.Object.extend({
   // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
   removeAfterDelete: true,
 
-  normalizeType: function(type) {
-    return type.toLowerCase();
-  },
-
   // Synchronously get record from local cache by [type] and [id].
   // Returns undefined if the record is not in cache, does not talk to API. 
   getById: function(type, id) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var group = this._group(type);
     return group.filterProperty('id',id)[0];
   },
@@ -37,7 +34,7 @@ var Store = Ember.Object.extend({
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
     var self = this;
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
 
@@ -153,7 +150,7 @@ var Store = Ember.Object.extend({
 
   // Returns a 'live' array of all records of [type] in the cache.
   all: function(type) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var group = this._group(type);
     var proxy = Ember.ArrayProxy.create({
       content: group
@@ -163,13 +160,13 @@ var Store = Ember.Object.extend({
   },
 
   haveAll: function(type) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     return this.get('_foundAll').get(type);
   },
 
   // find(type) && return all(type)
   findAll: function(type) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var self = this;
 
     if ( self.haveAll(type) )
@@ -198,18 +195,11 @@ var Store = Ember.Object.extend({
 
   // Create a record, but do not insert into the cache
   createRecord: function(data) {
-    var kind = this.normalizeType(data.kind||'');
-    var type = this.normalizeType(data.type||'');
+    var type = normalizeType(data.type||'');
     var container = this.get('container');
     var cls, schema;
 
-    if ( kind )
-    {
-      cls = container.lookup('model:'+kind);
-      schema = this.getById('schema',kind);
-    }
-
-    if ( !cls && type )
+    if ( type )
     {
       cls = container.lookup('model:'+type);
       schema = this.getById('schema',type);
@@ -417,7 +407,7 @@ var Store = Ember.Object.extend({
 
   // Get the cache group for [type]
   _group: function(type) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var cache = this.get('_cache');
     var group = cache.get(type);
     if ( !group )
@@ -431,14 +421,14 @@ var Store = Ember.Object.extend({
 
   // Add a record instance of [type] to cache
   _add: function(type, obj) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var group = this._group(type);
     group.pushObject(obj);
   },
 
   // Remove a record of [type] form cache, given the id or the record instance.
   _remove: function(type, obj) {
-    type = this.normalizeType(type);
+    type = normalizeType(type);
     var group = this._group(type);
     group.removeObject(obj);
   },
@@ -463,7 +453,7 @@ var Store = Ember.Object.extend({
 
     var self = this;
     var output;
-    type = this.normalizeType(type);
+    type = normalizeType(type);
 
     if ( type === 'collection' )
     {

@@ -1,5 +1,6 @@
 import Ember from 'ember';
 import Serializable from './serializable';
+import { normalizeType } from '../utils/normalize';
 
 var Type = Ember.Mixin.create(Serializable,{
   id: null,
@@ -143,7 +144,7 @@ var Type = Ember.Mixin.create(Serializable,{
 
     var method, url;
     var id = this.get('id');
-    var type = store.normalizeType(this.get('type'));
+    var type = normalizeType(this.get('type'));
     if ( id )
     {
       // Update
@@ -177,7 +178,7 @@ var Type = Ember.Mixin.create(Serializable,{
       }
 
       var newId = newData.get('id');
-      var newType = store.normalizeType(newData.get('type'));
+      var newType = normalizeType(newData.get('type'));
       if ( !id && newId && type === newType )
       {
         Ember.beginPropertyChanges();

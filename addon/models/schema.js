@@ -1,6 +1,7 @@
 import Resource from './resource';
+import { normalizeType } from '../utils/normalize';
 
-export default Resource.extend({
+var Schema = Resource.extend({
   getFieldNames: function() {
     return Object.keys(this.get('resourceFields'));
   },
@@ -32,3 +33,14 @@ export default Resource.extend({
     return out;
   }
 });
+
+Schema.reopenClass({
+  // Remap the host fields to host+[Field] so that the regular names can be a computed combination of host + agent status.
+  mangleIn: function(data) {
+    // Pass IDs through the type normalizer so they will match the case in other places like store.find('schema',normalizeType('thing'))
+    data.id = normalizeType(data.id);
+    return data;
+  },
+});
+
+export default Schema;
