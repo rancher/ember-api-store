@@ -308,11 +308,15 @@ var Store = Ember.Object.extend({
       Ember.$.ajax(opt).then(success,fail);
 
       function success(body, textStatus, xhr) {
-        resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
+        Ember.run(function() {
+          resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
+        });
       }
 
       function fail(xhr, textStatus, err) {
-        reject({xhr: xhr, textStatus: textStatus, err: err}, 'AJAX Error:' + url + '(' + xhr.status + ')');
+        Ember.run(function() {
+          reject({xhr: xhr, textStatus: textStatus, err: err}, 'AJAX Error:' + url + '(' + xhr.status + ')');
+        });
       }
     },'Raw AJAX Request: '+url);
 
@@ -330,60 +334,64 @@ var Store = Ember.Object.extend({
       self.rawRequest(opt).then(success,fail);
 
       function success(obj) {
-        var xhr = obj.xhr;
+        Ember.run(function() {
+          var xhr = obj.xhr;
 
-        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
-        {
-          var response = JSON.parse(xhr.responseText, boundTypeify);
-          if ( opt.depaginate && typeof response.depaginate === 'function' )
+          if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
           {
-            response.depaginate().then(function() {
+            var response = JSON.parse(xhr.responseText, boundTypeify);
+            if ( opt.depaginate && typeof response.depaginate === 'function' )
+            {
+              response.depaginate().then(function() {
+                resolve(response);
+              }).catch(fail);
+            }
+            else
+            {
               resolve(response);
-            }).catch(fail);
+            }
           }
           else
           {
-            resolve(response);
+            resolve(xhr.responseText);
           }
-        }
-        else
-        {
-          resolve(xhr.responseText);
-        }
+        });
       }
 
       function fail(obj) {
-        var response, body;
-        var xhr = obj.xhr;
-        var err = obj.err;
-        var textStatus = obj.textStatus;
+        Ember.run(function() {
+          var response, body;
+          var xhr = obj.xhr;
+          var err = obj.err;
+          var textStatus = obj.textStatus;
 
-        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
-        {
-          body = JSON.parse(xhr.responseText, boundTypeify);
-        }
-        else if ( err )
-        {
-          body = {status: xhr.status, message: err};
-        }
-        else
-        {
-          body = {status: xhr.status, message: xhr.responseText};
-        }
+          if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
+          {
+            body = JSON.parse(xhr.responseText, boundTypeify);
+          }
+          else if ( err )
+          {
+            body = {status: xhr.status, message: err};
+          }
+          else
+          {
+            body = {status: xhr.status, message: xhr.responseText};
+          }
 
-        if ( ApiError.detectInstance(body) )
-        {
-          response = body;
-        }
-        else
-        {
-          response = ApiError.create(body);
-        }
+          if ( ApiError.detectInstance(body) )
+          {
+            response = body;
+          }
+          else
+          {
+            response = ApiError.create(body);
+          }
 
-        Object.defineProperty(response, 'xhr', { value: xhr });
-        Object.defineProperty(response, 'textStatus', { value: textStatus });
+          Object.defineProperty(response, 'xhr', { value: xhr });
+          Object.defineProperty(response, 'textStatus', { value: textStatus });
 
-        reject(response);
+          reject(response);
+        });
       }
     },'Request: '+ opt.url);
 
@@ -392,8 +400,11 @@ var Store = Ember.Object.extend({
 
   // Forget about all the resources that hae been previously remembered.
   reset: function() {
-    this.set('_cache', Ember.Object.create());
-    this.set('_foundAll', Ember.Object.create());
+    var self = this;
+    Ember.run(function() {
+      self.set('_cache', Ember.Object.create());
+      self.set('_foundAll', Ember.Object.create());
+    });
   },
 
   // ---------
@@ -421,16 +432,22 @@ var Store = Ember.Object.extend({
 
   // Add a record instance of [type] to cache
   _add: function(type, obj) {
-    type = normalizeType(type);
-    var group = this._group(type);
-    group.pushObject(obj);
+    var self = this;
+    Ember.run(function() {
+      type = normalizeType(type);
+      var group = self._group(type);
+      group.pushObject(obj);
+    });
   },
 
   // Remove a record of [type] form cache, given the id or the record instance.
   _remove: function(type, obj) {
-    type = normalizeType(type);
-    var group = this._group(type);
-    group.removeObject(obj);
+    var self = this;
+    Ember.run(function() {
+      type = normalizeType(type);
+      var group = self._group(type);
+      group.removeObject(obj);
+    });
   },
 
   // JSON.parse() will call this for every key and value when parsing a JSON document.
