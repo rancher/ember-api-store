@@ -1,8 +1,5 @@
 import Ember from 'ember';
 
-// Properties to ignore because they're built-in to ember, ember-debug, or the store
-var reserved = ['__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey'];
-
 var Serializable = Ember.Mixin.create({
   serialize: function(depth) {
     depth = depth || 0;
@@ -53,8 +50,13 @@ var Serializable = Ember.Mixin.create({
     }
   },
 
+  // Properties to ignore because they're built-in to ember, ember-debug, or the store
+  concatenatedProperties: ['reservedKeys'],
+  reservedKeys: ['reservedKeys','__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey'],
+
   allKeys: function() {
     var out = [];
+    var reserved = this.get('reservedKeys');
     for ( var k in Ember.$.extend(true, {}, this) )
     {
       if ( reserved.indexOf(k) === -1 && Ember.typeOf(this[k]) !== 'function' )

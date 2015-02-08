@@ -69,7 +69,7 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   followLink: function(name, opt) {
-    var url = this.get('links.'+name);
+    var url = this.linkFor(name);
     opt = opt || {};
 
     if (!url)
@@ -149,7 +149,7 @@ var Type = Ember.Mixin.create(Serializable,{
     {
       // Update
       method = 'PUT';
-      url = this.get('links.self');
+      url = this.linkFor('self');
     }
     else
     {
@@ -182,6 +182,7 @@ var Type = Ember.Mixin.create(Serializable,{
       if ( !id && newId && type === newType )
       {
         Ember.beginPropertyChanges();
+
         // A new record was created.  Typeify will have put it into the store,
         // but it's not the same instance as this object.  So we need to fix that.
         self.merge(newData);
@@ -205,7 +206,7 @@ var Type = Ember.Mixin.create(Serializable,{
 
     return this.get('store').request({
       method: 'DELETE',
-      url: this.get('links.self')
+      url: this.linkFor('self')
     }).then(function(newData) {
       if ( store.get('removeAfterDelete') )
       {
@@ -213,6 +214,25 @@ var Type = Ember.Mixin.create(Serializable,{
       }
       return newData;
     });
+  },
+
+  reload: function() {
+    if ( !this.hasLink('self') )
+    {
+      return Ember.RSVP.reject('Resource has no self link');
+    }
+
+    var self = this;
+    return this.get('store').request({
+      method: 'GET',
+      url: this.linkFor('self')
+    }).then(function(/*newData*/) {
+      return self;
+    });
+  },
+
+  isInStore: function() {
+    return this.get('store').hasRecord(this);
   }
 });
 

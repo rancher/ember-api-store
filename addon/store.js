@@ -23,6 +23,13 @@ var Store = Ember.Object.extend({
     return !!this.getById(type,id);
   },
 
+  // Synchronously returns whether this exact record object is in the local cache
+  hasRecord: function(obj) {
+    var type = normalizeType(obj.get('type'));
+    var group = this._group(type);
+    return group.indexOf(obj) >= 0;
+  },
+
   // Asynchronous, returns promise.
   // find(type[,opt]): Query API for all records of [type]
   // find(type,id[,opt]): Query API for record [id] of [type]
