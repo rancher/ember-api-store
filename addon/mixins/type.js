@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
+import { copyHeaders } from '../utils/apply-headers';
 
 var Type = Ember.Mixin.create(Serializable,{
   id: null,
@@ -68,6 +69,19 @@ var Type = Ember.Mixin.create(Serializable,{
     return !!this.linkFor(name);
   },
 
+  headers: null,
+  request: function(opt) {
+    if ( !opt.headers )
+    {
+      opt.headers = {};
+    }
+
+    copyHeaders(this.constructor.headers, opt.headers);
+    copyHeaders(this.get('headers'), opt.headers);
+
+    return this.get('store').request(opt);
+  },
+
   followLink: function(name, opt) {
     var url = this.linkFor(name);
     opt = opt || {};
@@ -89,7 +103,7 @@ var Type = Ember.Mixin.create(Serializable,{
       });
     }
 
-    return this.get('store').request({
+    return this.request({
       method: 'GET',
       url: url
     });
@@ -127,7 +141,7 @@ var Type = Ember.Mixin.create(Serializable,{
       return Ember.RSVP.reject(new Error('Unknown action: ' + name));
     }
 
-    return this.get('store').request({
+    return this.request({
       method: 'POST',
       url: url,
       data: data
@@ -167,7 +181,7 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['links'];
     delete json['actions'];
 
-    return store.request({
+    return this.request({
       method: method,
       url: url,
       data: json,
@@ -204,7 +218,7 @@ var Type = Ember.Mixin.create(Serializable,{
     var store = this.get('store');
     var type = this.get('type');
 
-    return this.get('store').request({
+    return this.request({
       method: 'DELETE',
       url: this.linkFor('self')
     }).then(function(newData) {
@@ -223,7 +237,7 @@ var Type = Ember.Mixin.create(Serializable,{
     }
 
     var self = this;
-    return this.get('store').request({
+    return this.request({
       method: 'GET',
       url: this.linkFor('self')
     }).then(function(/*newData*/) {

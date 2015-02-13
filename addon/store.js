@@ -2,6 +2,7 @@ import Ember from 'ember';
 import Serializable from './mixins/serializable';
 import ApiError from './models/error';
 import { normalizeType } from './utils/normalize';
+import { applyHeaders } from './utils/apply-headers';
 
 var Store = Ember.Object.extend({
   baseUrl: '/v1',
@@ -249,36 +250,8 @@ var Store = Ember.Object.extend({
       out['x-api-csrf'] = csrf;
     }
 
-    var more = this.get('headers');
-    if ( more )
-    {
-      Object.keys(more).forEach(function(key) {
-        var val = Ember.get(more,key);
-        if ( val === undefined )
-        {
-          delete out[key.toLowerCase()];
-        }
-        else
-        {
-          out[key.toLowerCase()] = val;
-        }
-      });
-    }
-
-    if ( perRequest )
-    {
-      Object.keys(perRequest).forEach(function(key) {
-        var val = Ember.get(perRequest,key);
-        if ( val === undefined )
-        {
-          delete out[key.toLowerCase()];
-        }
-        else
-        {
-          out[key.toLowerCase()] = val;
-        }
-      });
-    }
+    applyHeaders(this.get('headers'), out);
+    applyHeaders(perRequest, out);
 
     return out;
   },
@@ -487,9 +460,9 @@ var Store = Ember.Object.extend({
 
     output = self.createRecord(input);
 
-    if (input.id)
+    if (output.id)
     {
-      var cacheEntry = self.getById(type, input.id);
+      var cacheEntry = self.getById(type, output.id);
       if ( cacheEntry )
       {
         cacheEntry.replaceWith(output);
