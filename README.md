@@ -76,7 +76,7 @@ A collection is a model object representing an array of resources in the API.  I
 
 License
 =======
-Copyright (c) 2014 [Rancher Labs, Inc.](http://rancher.com)
+Copyright (c) 2014-2015 [Rancher Labs, Inc.](http://rancher.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
