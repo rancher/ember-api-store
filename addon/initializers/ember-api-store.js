@@ -11,7 +11,8 @@ export default function(container, application) {
   container.register('model:schema', Schema);
   container.register('model:error', ApiError);
 
-  application.inject('controller', 'store', 'store:main');
-  application.inject('route', 'store', 'store:main');
-  application.inject('model', 'store', 'store:main');
+  application.inject('controller','store', 'store:main');
+  application.inject('route',     'store', 'store:main');
+  application.inject('model',     'store', 'store:main');
+  application.inject('component', 'store', 'store:main')
 }
