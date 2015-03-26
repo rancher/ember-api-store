@@ -74,6 +74,13 @@ A collection is a model object representing an array of resources in the API.  I
 
 * `ember build`
 
+
+## Contact
+For bugs, questions, comments, corrections, suggestions, etc., open an issue in
+ [rancherio/rancher](//github.com/rancherio/rancher/issues) with a title starting with `[ember-api-store] `.
+
+Or just [click here](//github.com/rancherio/rancher/issues/new?title=%5Bember-api-store%5D%20) to create a new issue.
+
 License
 =======
 Copyright (c) 2014-2015 [Rancher Labs, Inc.](http://rancher.com)
