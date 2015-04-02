@@ -14,5 +14,5 @@ export default function(container, application) {
   application.inject('controller','store', 'store:main');
   application.inject('route',     'store', 'store:main');
   application.inject('model',     'store', 'store:main');
-  application.inject('component', 'store', 'store:main')
+  application.inject('component', 'store', 'store:main');
 }
