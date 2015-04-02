@@ -236,10 +236,18 @@ var Type = Ember.Mixin.create(Serializable,{
       return Ember.RSVP.reject('Resource has no self link');
     }
 
+    var url = this.linkFor('self');
+    if ( this.constructor && this.constructor.alwaysInclude )
+    {
+      this.constructor.alwaysInclude.forEach(function(key) {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
+      });
+    }
+
     var self = this;
     return this.request({
       method: 'GET',
-      url: this.linkFor('self')
+      url: url,
     }).then(function(/*newData*/) {
       return self;
     });
