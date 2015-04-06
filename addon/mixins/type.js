@@ -103,6 +103,18 @@ var Type = Ember.Mixin.create(Serializable,{
       });
     }
 
+    if ( opt.sort )
+    {
+      if ( !Ember.isArray(opt.sort) )
+      {
+        opt.sort = [opt.sort];
+      }
+
+      opt.sort.forEach(function(key) {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'sort=' + encodeURIComponent(key);
+      });
+    }
+
     return this.request({
       method: 'GET',
       url: url
