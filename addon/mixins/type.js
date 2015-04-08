@@ -266,7 +266,8 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   isInStore: function() {
-    return this.get('store').hasRecord(this);
+    var store = this.get('store');
+    return store && this.get('id') && this.get('type') && store.hasRecord(this);
   }
 });
 

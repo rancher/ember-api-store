@@ -417,6 +417,10 @@ var Store = Ember.Object.extend({
       type = normalizeType(type);
       var group = self._group(type);
       group.pushObject(obj);
+      if ( typeof obj.wasAdded === 'function' )
+      {
+        obj.wasAdded();
+      }
     });
   },
 
@@ -427,6 +431,10 @@ var Store = Ember.Object.extend({
       type = normalizeType(type);
       var group = self._group(type);
       group.removeObject(obj);
+      if ( typeof obj.wasRemoved === 'function' )
+      {
+        obj.wasRemoved();
+      }
     });
   },
 
