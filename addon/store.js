@@ -39,6 +39,7 @@ var Store = Ember.Object.extend({
   //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
   //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
+  //  headers: Headers to send int he request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
     var self = this;
@@ -143,9 +144,18 @@ var Store = Ember.Object.extend({
       }
       // End: Sort
 
+      // Headers
+      var newHeaders = {};
+      if ( cls && cls.constructor.headers )
+      {
+        applyHeaders(cls.constructor.headers, newHeaders);
+      }
+      applyHeaders(opt.headers, newHeaders);
+
       return self.request({
         url: url,
-        depaginate: opt.depaginate
+        depaginate: opt.depaginate,
+        headers: newHeaders,
       }).then(function(result) {
         if ( isForAll )
         {
@@ -320,6 +330,10 @@ var Store = Ember.Object.extend({
           if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
           {
             var response = JSON.parse(xhr.responseText, boundTypeify);
+
+            Object.defineProperty(response, 'xhr', { value: obj.xhr, configurable: true, writable: true});
+            Object.defineProperty(response, 'textStatus', { value: obj.textStatus, configurable: true, writable: true});
+
             if ( opt.depaginate && typeof response.depaginate === 'function' )
             {
               response.depaginate().then(function() {
@@ -367,8 +381,8 @@ var Store = Ember.Object.extend({
             response = ApiError.create(body);
           }
 
-          Object.defineProperty(response, 'xhr', { value: xhr });
-          Object.defineProperty(response, 'textStatus', { value: textStatus });
+          Object.defineProperty(response, 'xhr', { value: xhr, configurable: true, writable: true});
+          Object.defineProperty(response, 'textStatus', { value: textStatus, configurable: true, writable: true});
 
           reject(response);
         });
