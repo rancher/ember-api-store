@@ -146,21 +146,23 @@ var Type = Ember.Mixin.create(Serializable,{
     });
   },
 
-  doAction: function(name, data) {
+  doAction: function(name, data, opt) {
     var url = this.get('actions.'+name);
     if (!url)
     {
       return Ember.RSVP.reject(new Error('Unknown action: ' + name));
     }
 
-    return this.request({
-      method: 'POST',
-      url: url,
-      data: data
-    }).then(function(newData) {
-      // newData may or may not be this same object, depending on what the action returns.
-      return newData;
-    });
+    opt = opt || {};
+    opt.method = 'POST';
+    opt.url = url;
+    if ( data )
+    {
+      opt.data = data;
+    }
+
+    // Note: The response object may or may not be this same object, depending on what the action returns.
+    return this.request(opt);
   },
 
   save: function() {
