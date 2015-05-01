@@ -401,6 +401,13 @@ var Store = Ember.Object.extend({
     });
   },
 
+  resetType: function(type) {
+    type = normalizeType(type);
+    var group = this._group(type);
+    this.get('_foundAll').set(type,false);
+    group.clear();
+  },
+
   // ---------
 
   _cache: null,
