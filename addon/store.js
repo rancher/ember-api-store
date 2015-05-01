@@ -148,9 +148,9 @@ var Store = Ember.Object.extend({
       var newHeaders = {};
       if ( cls && cls.constructor.headers )
       {
-        applyHeaders(cls.constructor.headers, newHeaders);
+        applyHeaders(cls.constructor.headers, newHeaders, true);
       }
-      applyHeaders(opt.headers, newHeaders);
+      applyHeaders(opt.headers, newHeaders, true);
 
       return self.request({
         url: url,

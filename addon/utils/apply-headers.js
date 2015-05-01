@@ -17,7 +17,7 @@ export function copyHeaders(more, dest) {
 }
 
 // Apply the headers from `more` into the object `dest`
-export function applyHeaders(more, dest) {
+export function applyHeaders(more, dest, copyUndefined) {
   if ( !more || typeof more !== 'object' )
   {
     return;
@@ -26,7 +26,7 @@ export function applyHeaders(more, dest) {
   Object.keys(more).forEach(function(key) {
     var val = Ember.get(more, key);
     var normalizedKey = key.toLowerCase();
-    if ( val === undefined )
+    if ( val === undefined && copyUndefined !== true )
     {
       delete dest[normalizedKey];
     }
