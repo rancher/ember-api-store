@@ -5,7 +5,7 @@ var Serializable = Ember.Mixin.create({
     depth = depth || 0;
     var output;
 
-    if ( depth > 5 )
+    if ( depth > 10 )
     {
       return null;
     }
@@ -18,9 +18,9 @@ var Serializable = Ember.Mixin.create({
     }
     else
     {
-      output = this.constructor.create();
+      output = {};
       this.eachKeys(function(v,k) {
-        output.set(k, recurse(v,depth+1));
+        output[k] = recurse(v,depth+1);
       });
     }
 
@@ -36,12 +36,21 @@ var Serializable = Ember.Mixin.create({
       if ( Ember.isArray(obj) )
       {
         return obj.map(function(item) {
-          return recurse(item,depth+1);
+          return recurse(item, depth+1);
         });
       }
       else if ( Serializable.detect(obj) )
       {
         return obj.serialize(depth+1);
+      }
+      else if ( obj && typeof obj === 'object' )
+      {
+        var out = {};
+        var keys = Object.keys(obj);
+        keys.forEach(function(k) {
+          out[k] = recurse(obj[k], depth+1);
+        });
+        return out;
       }
       else
       {

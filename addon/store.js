@@ -53,7 +53,8 @@ var Store = Ember.Object.extend({
     }
 
     // If this is a request for all of the items of [type], then we'll remember that and not ask again for a subsequent request
-    var isForAll = !id && opt.depaginate && !opt.filter && !opt.include;
+    var isCacheable = opt.depaginate && !opt.filter && !opt.include;
+    var isForAll = !id && isCacheable;
 
     // See if we already have this resource, unless forceReload is on.
     if ( opt.forceReload !== true )
@@ -62,7 +63,7 @@ var Store = Ember.Object.extend({
       {
         return Ember.RSVP.resolve(self.all(type),'Cached find all '+type);
       }
-      else if ( !isForAll && id )
+      else if ( isCacheable && id )
       {
         var existing = self.getById(type,id);
         if ( existing )
