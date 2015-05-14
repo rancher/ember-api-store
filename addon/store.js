@@ -465,7 +465,38 @@ var Store = Ember.Object.extend({
   // The value in the output for the key will be the value returned.
   // If no value is returned, the key will not be included in the output.
   _typeify: function(key, input) {
+    var output = this._createObject(input);
 
+    if ( !input || typeof input !== 'object' || !input.type || typeof input.type !== 'string' )
+    {
+      // Basic values can be returned unmodified
+      return output;
+    }
+
+
+    // Actual resorces should be added or updated in the store
+    var type = normalizeType(input.type);
+    if (output.id)
+    {
+      var cacheEntry = this.getById(type, output.id);
+      if ( cacheEntry )
+      {
+        cacheEntry.replaceWith(output);
+        return cacheEntry;
+      }
+      else
+      {
+        this._add(type, output);
+        return output;
+      }
+    }
+    else
+    {
+      return output;
+    }
+  },
+
+  _createObject: function(input) {
     // Basic values can be returned unmodified
     if ( !input || typeof input !== 'object' || Ember.isArray(input) || !input.links )
     {
@@ -478,35 +509,14 @@ var Store = Ember.Object.extend({
       return Ember.Object.create(input);
     }
 
-    var self = this;
-    var output;
     type = normalizeType(type);
-
     if ( type === 'collection' )
     {
-      output = self.createCollection(input);
-      return output;
-    }
-
-    output = self.createRecord(input);
-
-    if (output.id)
-    {
-      var cacheEntry = self.getById(type, output.id);
-      if ( cacheEntry )
-      {
-        cacheEntry.replaceWith(output);
-        return cacheEntry;
-      }
-      else
-      {
-        self._add(type, output);
-        return output;
-      }
+      return this.createCollection(input);
     }
     else
     {
-      return output;
+      return this.createRecord(input);
     }
   }
 });
