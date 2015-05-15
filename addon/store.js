@@ -498,7 +498,7 @@ var Store = Ember.Object.extend({
 
   _createObject: function(input) {
     // Basic values can be returned unmodified
-    if ( !input || typeof input !== 'object' || Ember.isArray(input) || !input.links )
+    if ( !input || typeof input !== 'object' || Ember.isArray(input) )
     {
       return input;
     }
