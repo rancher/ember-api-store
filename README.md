@@ -5,8 +5,19 @@ Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://gith
 
 ## Installation
 ```bash
+  ember install ember-api-store
+```
+
+#### Installation for ember-cli < 0.2.3
+```bash
+  ember install:addon ember-api-store
+```
+
+#### Installation without ember-cli
+```bash
   npm install --save-dev ember-api-store
 ```
+
 ## Usage
 
 ### Store
