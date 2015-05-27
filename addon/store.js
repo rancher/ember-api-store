@@ -3,6 +3,7 @@ import Serializable from './mixins/serializable';
 import ApiError from './models/error';
 import { normalizeType } from './utils/normalize';
 import { applyHeaders } from './utils/apply-headers';
+import { ajaxPromise } from './utils/ajax-promise';
 
 var Store = Ember.Object.extend({
   baseUrl: '/v1',
@@ -295,22 +296,7 @@ var Store = Ember.Object.extend({
       }
     }
 
-    var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-      Ember.$.ajax(opt).then(success,fail);
-
-      function success(body, textStatus, xhr) {
-        Ember.run(function() {
-          resolve({xhr: xhr, textStatus: textStatus},'AJAX Reponse: '+url + '(' + xhr.status + ')');
-        });
-      }
-
-      function fail(xhr, textStatus, err) {
-        Ember.run(function() {
-          reject({xhr: xhr, textStatus: textStatus, err: err}, 'AJAX Error:' + url + '(' + xhr.status + ')');
-        });
-      }
-    },'Raw AJAX Request: '+url);
-
+    var promise = ajaxPromise(opt);
     return promise;
   },
 
