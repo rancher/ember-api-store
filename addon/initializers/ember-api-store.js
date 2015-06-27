@@ -4,12 +4,12 @@ import Collection from '../models/collection';
 import ApiError from '../models/error';
 import Schema from '../models/schema';
 
-export default function(container, application) {
-  container.register('store:main', Store);
-  container.register('model:resource', Resource);
-  container.register('model:collection', Collection);
-  container.register('model:schema', Schema);
-  container.register('model:error', ApiError);
+export default function(registry, application) {
+  registry.register('store:main', Store);
+  registry.register('model:resource', Resource);
+  registry.register('model:collection', Collection);
+  registry.register('model:schema', Schema);
+  registry.register('model:error', ApiError);
 
   application.inject('controller','store', 'store:main');
   application.inject('route',     'store', 'store:main');

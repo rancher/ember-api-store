@@ -37,6 +37,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
           method: 'GET',
           url: next,
           depaginate: false,
+          forPagination: true
         }).then(gotPage, fail);
       }
       else

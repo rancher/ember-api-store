@@ -6,6 +6,7 @@ import { applyHeaders } from './utils/apply-headers';
 import { ajaxPromise } from './utils/ajax-promise';
 
 var Store = Ember.Object.extend({
+  defaultPageSize: 1000,
   baseUrl: '/v1',
   metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','sort','sortLinks'],
 
@@ -47,6 +48,11 @@ var Store = Ember.Object.extend({
     type = normalizeType(type);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
+
+    if ( !id && !opt.limit )
+    {
+      opt.limit = this.defaultPageSize;
+    }
 
     if ( !type )
     {
@@ -120,6 +126,11 @@ var Store = Ember.Object.extend({
       else
       {
         opt.include = [];
+      }
+
+      if ( opt.limit )
+      {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'limit=' + opt.limit;
       }
 
       var cls = self.get('container').lookup('model:'+type);

@@ -22,7 +22,7 @@ var Type = Ember.Mixin.create(Serializable,{
         var curVal = self.get(k);
         if ( unionArrays && Ember.isArray(curVal) && Ember.isArray(v) )
         {
-          curVal.pushObjects(v);
+          curVal.addObjects(v);
         }
         else
         {
