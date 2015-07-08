@@ -63,18 +63,25 @@ var Serializable = Ember.Mixin.create({
   concatenatedProperties: ['reservedKeys'],
   reservedKeys: ['reservedKeys','__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey','_registry','cache','factoryCache','validationCache'],
 
-  allKeys: function() {
+  allKeys: function(withIncludes) {
     var self = this;
     var reserved = this.get('reservedKeys');
-    var out = Ember.keys(this).filter(function(k) {
-      return reserved.indexOf(k) === -1 && Ember.typeOf(Ember.get(self,k)) !== 'function';
+
+    var alwaysIncluded = [];
+    if ( withIncludes === false )
+    {
+      alwaysIncluded = this.constructor.alwaysInclude || [];
+    }
+
+    var out = Object.keys(this).filter(function(k) {
+      return reserved.indexOf(k) === -1 && alwaysIncluded.indexOf(k) === -1 && Ember.typeOf(Ember.get(self,k)) !== 'function';
     });
     return out;
   },
 
-  eachKeys: function(fn) {
+  eachKeys: function(fn, withIncludes) {
     var self = this;
-    this.allKeys().forEach(function(k) {
+    this.allKeys(withIncludes).forEach(function(k) {
       fn.call(self, self.get(k), k);
     });
   },
