@@ -8,7 +8,7 @@ import { ajaxPromise } from './utils/ajax-promise';
 var Store = Ember.Object.extend({
   defaultPageSize: 1000,
   baseUrl: '/v1',
-  metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','sort','sortLinks'],
+  metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'],
 
   // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
   removeAfterDelete: true,
@@ -31,6 +31,10 @@ var Store = Ember.Object.extend({
     var type = normalizeType(obj.get('type'));
     var group = this._group(type);
     return group.indexOf(obj) >= 0;
+  },
+
+  isCacheable: function(opt) {
+    return !opt || (opt.depaginate && !opt.filter && !opt.include);
   },
 
   // Asynchronous, returns promise.
@@ -60,7 +64,7 @@ var Store = Ember.Object.extend({
     }
 
     // If this is a request for all of the items of [type], then we'll remember that and not ask again for a subsequent request
-    var isCacheable = opt.depaginate && !opt.filter && !opt.include;
+    var isCacheable = this.isCacheable(opt);
     var isForAll = !id && isCacheable;
 
     // See if we already have this resource, unless forceReload is on.

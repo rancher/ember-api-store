@@ -1,5 +1,7 @@
 import Ember from 'ember';
 import TypeMixin from '../mixins/type';
+import { copyHeaders } from '../utils/apply-headers';
+import { normalizeType } from '../utils/normalize';
 
 export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
   type: 'collection',
@@ -12,6 +14,26 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
 
   toString: function() {
     return 'collection:'+ this.get('resourceType') + '[' + this.get('length') + ']';
+  },
+
+  request: function(opt) {
+    if ( !opt.headers )
+    {
+      opt.headers = {};
+    }
+
+    var cls = this.get('container').lookup('model:'+normalizeType(this.get('resourceType')));
+    if ( cls && cls.constructor.alwaysInclude )
+    {
+      opt.include.addObjects(cls.constructor.alwaysInclude);
+    }
+
+    if ( cls && cls.constructor.headers )
+    {
+      copyHeaders(cls.constructor.headers, opt.headers);
+    }
+
+    return this.get('store').request(opt);
   },
 
   depaginate: function(depth) {
@@ -33,7 +55,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
       if ( next )
       {
         console.log('Depaginate, requesting', next);
-        self.get('store').request({
+        self.request({
           method: 'GET',
           url: next,
           depaginate: false,

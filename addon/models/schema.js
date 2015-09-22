@@ -35,7 +35,6 @@ var Schema = Resource.extend({
 });
 
 Schema.reopenClass({
-  // Remap the host fields to host+[Field] so that the regular names can be a computed combination of host + agent status.
   mangleIn: function(data) {
     // Pass IDs through the type normalizer so they will match the case in other places like store.find('schema',normalizeType('thing'))
     data.id = normalizeType(data.id);
