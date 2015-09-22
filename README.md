@@ -1,7 +1,7 @@
 Ember API Store
 ===============
 
-Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancherio/api-spec).
+Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancher/api-spec).
 
 ## Installation
 ```bash
@@ -77,9 +77,9 @@ A collection is a model object representing an array of resources in the API.  I
 
 ## Contact
 For bugs, questions, comments, corrections, suggestions, etc., open an issue in
- [rancherio/rancher](//github.com/rancherio/rancher/issues) with a title starting with `[ember-api-store] `.
+ [rancher/rancher](//github.com/rancher/rancher/issues) with a title starting with `[ember-api-store] `.
 
-Or just [click here](//github.com/rancherio/rancher/issues/new?title=%5Bember-api-store%5D%20) to create a new issue.
+Or just [click here](//github.com/rancher/rancher/issues/new?title=%5Bember-api-store%5D%20) to create a new issue.
 
 License
 =======
