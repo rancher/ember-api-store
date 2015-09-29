@@ -25,6 +25,11 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
     var cls = this.get('container').lookup('model:'+normalizeType(this.get('resourceType')));
     if ( cls && cls.constructor.alwaysInclude )
     {
+      if ( !opt.include )
+      {
+        opt.include = [];
+      }
+
       opt.include.addObjects(cls.constructor.alwaysInclude);
     }
 
