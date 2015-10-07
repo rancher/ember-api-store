@@ -7,7 +7,6 @@ var Type = Ember.Mixin.create(Serializable,{
   id: null,
   type: null,
   links: null,
-  actions: null,
 
   toString: function() {
     return '(generic type mixin)';
@@ -140,18 +139,18 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   hasAction: function(name) {
-    var url = this.get('actions.'+name);
+    var url = this.get('actionLinks.'+name);
     return !!url;
   },
 
   computedHasAction: function(name) {
-    return Ember.computed('actions.'+name, function() {
+    return Ember.computed('actionLinks.'+name, function() {
       return this.hasAction(name);
     });
   },
 
   doAction: function(name, data, opt) {
-    var url = this.get('actions.'+name);
+    var url = this.get('actionLinks.'+name);
     if (!url)
     {
       return Ember.RSVP.reject(new Error('Unknown action: ' + name));
@@ -198,6 +197,7 @@ var Type = Ember.Mixin.create(Serializable,{
     var json = this.serialize();
     delete json['links'];
     delete json['actions'];
+    delete json['actionLinks'];
 
     return this.request({
       method: method,

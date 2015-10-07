@@ -1,7 +1,8 @@
 import Ember from 'ember';
 import TypeMixin from '../mixins/type';
 
-var Resource = Ember.Object.extend(TypeMixin, {
+var Actionable = Ember.Object.extend(Ember.ActionHandler);
+var Resource = Actionable.extend(TypeMixin, {
   toString: function() {
     var str = 'resource:'+this.get('type');
     var id = this.get('id');

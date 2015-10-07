@@ -256,6 +256,13 @@ var Store = Ember.Object.extend({
       input = data;
     }
 
+    // actions is very unhappy property name for Ember...
+    if ( input.actions )
+    {
+      input.actionLinks = input.actions;
+      delete input.actions;
+    }
+
     if ( typeof cls.constructor.mangleIn === 'function' )
     {
       input = cls.constructor.mangleIn(input);
