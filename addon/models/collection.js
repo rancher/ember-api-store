@@ -116,7 +116,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
   },
 
   findById: function(id) {
-    var matches = this.filterProperty('id',id);
+    var matches = this.filterBy('id',id);
     return matches[0];
   },
 
@@ -126,7 +126,7 @@ export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
       var subItems = item.get(key);
       if ( subItems && subItems.get('length') )
       {
-        var matches = subItems.filterProperty('id', id);
+        var matches = subItems.filterBy('id', id);
         if ( matches.length )
         {
           out = matches.objectAt(0);

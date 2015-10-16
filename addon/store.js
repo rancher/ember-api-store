@@ -18,7 +18,7 @@ var Store = Ember.Object.extend({
   getById: function(type, id) {
     type = normalizeType(type);
     var group = this._group(type);
-    return group.filterProperty('id',id)[0];
+    return group.filterBy('id',id)[0];
   },
 
   // Synchronously returns whether record for [type] and [id] is in the local cache.
