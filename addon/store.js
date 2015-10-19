@@ -159,6 +159,11 @@ var Store = Ember.Object.extend({
       {
         url += (url.indexOf('?') >= 0 ? '&' : '?') + 'sort=' + encodeURIComponent(sortBy);
       }
+
+      if ( opt.sortOrder && opt.sortOrder )
+      {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'order=' + encodeURIComponent(opt.sortOrder);
+      }
       // End: Sort
 
       // Headers
