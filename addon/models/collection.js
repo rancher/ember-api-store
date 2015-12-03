@@ -3,7 +3,7 @@ import TypeMixin from '../mixins/type';
 import { copyHeaders } from '../utils/apply-headers';
 import { normalizeType } from '../utils/normalize';
 
-export default Ember.ArrayProxy.extend(Ember.SortableMixin, TypeMixin, {
+export default Ember.ArrayProxy.extend(TypeMixin, {
   type: 'collection',
   createDefaults: null,
   createTypes: null,

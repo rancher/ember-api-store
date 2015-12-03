@@ -43,7 +43,7 @@ var Type = Ember.Mixin.create(Serializable,{
     // Remove values that are in current but not new.
     var newKeys = newData.allKeys();
     this.eachKeys(function(v, k) {
-      // If the key is a valid link name and 
+      // If the key is a valid link name and
       if ( newKeys.indexOf(k) === -1 && !this.hasLink(k) )
       {
         self.set(k, undefined);
@@ -68,6 +68,10 @@ var Type = Ember.Mixin.create(Serializable,{
     return url;
   },
 
+  pageFor: function(name) {
+    return this.get(`pagination.${name}`);
+  },
+
   hasLink: function(name) {
     return !!this.linkFor(name);
   },
@@ -83,6 +87,20 @@ var Type = Ember.Mixin.create(Serializable,{
     copyHeaders(this.get('headers'), opt.headers);
 
     return this.get('store').request(opt);
+  },
+
+  followPagination: function(name) {
+    var url = this.pageFor(name);
+
+    if (!url)
+    {
+      throw new Error('Unknown link');
+    }
+
+    return this.request({
+      method: 'GET',
+      url: url
+    });
   },
 
   followLink: function(name, opt) {
