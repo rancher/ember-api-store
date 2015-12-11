@@ -4,9 +4,23 @@ Ember API Store
 Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancher/api-spec).
 
 ## Installation
+
+When using ember-cli >= 0.2.3, run the following command from inside your ember-cli project:
+
+```bash
+  ember install ember-api-store
+```
+
+#### Installation with ember-cli 0.1.5 - 0.2.3
+```bash
+  ember install:addon ember-api-store
+```
+
+#### Installation without ember-cli
 ```bash
   npm install --save-dev ember-api-store
 ```
+
 ## Usage
 
 ### Store
