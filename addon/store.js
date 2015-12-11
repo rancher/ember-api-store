@@ -270,7 +270,7 @@ var Store = Ember.Object.extend({
 
     if ( typeof cls.constructor.mangleIn === 'function' )
     {
-      input = cls.constructor.mangleIn(input);
+      input = cls.constructor.mangleIn(input,this);
     }
 
     var output = cls.constructor.create(input);
