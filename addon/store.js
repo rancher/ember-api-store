@@ -10,11 +10,14 @@ var Store = Ember.Object.extend({
   baseUrl: '/v1',
   metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'],
 
+
+  promiseQueue: null,
+
   // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
   removeAfterDelete: true,
 
   // Synchronously get record from local cache by [type] and [id].
-  // Returns undefined if the record is not in cache, does not talk to API. 
+  // Returns undefined if the record is not in cache, does not talk to API.
   getById: function(type, id) {
     type = normalizeType(type);
     var group = this._group(type);
@@ -100,6 +103,7 @@ var Store = Ember.Object.extend({
     }
 
     function findWithUrl(url) {
+      var promises = self.get('promiseQueue');
       // Filter
       // @TODO friendly support for modifiers
       if ( opt.filter )
@@ -174,17 +178,67 @@ var Store = Ember.Object.extend({
       }
       applyHeaders(opt.headers, newHeaders, true);
 
-      return self.request({
-        url: url,
-        depaginate: opt.depaginate,
-        headers: newHeaders,
-      }).then(function(result) {
-        if ( isForAll )
-        {
-          self.get('_foundAll').set(type,true);
-        }
-        return result;
-      });
+
+      var later;
+
+      // check to see if the request is in the promiseQueue (promises)
+      if (promises[url]) {
+        // get the filterd promise object
+        var filteredPromise = promises[url];
+
+        later = Ember.RSVP.defer();
+
+        filteredPromise.push(later);
+
+        later = later.promise;
+
+      } else { // request is not in the promiseQueue
+
+        later = self.request({
+          url: url,
+          depaginate: opt.depaginate,
+          headers: newHeaders,
+        }).then((result) => {
+
+          if ( isForAll )
+          {
+            self.get('_foundAll').set(type,true);
+          }
+
+          resolvePromisesInQueue(url, result, 'resolve');
+          return result;
+        }, (reason) => {
+          resolvePromisesInQueue(url, reason, 'reject');
+          return reason;
+        });
+
+        // set the promises array to empty indicating we've had 1 promise already
+        promises[url] = [];
+
+      }
+
+      return later;
+    }
+
+    function resolvePromisesInQueue(url, result, type) {
+      var localPromises = self.get('promiseQueue')[url];
+
+      if (localPromises && localPromises.length >= 1) {
+
+        while (localPromises.length >= 1) {
+          var itemToResolve = localPromises.pop();
+
+          if (type === 'resolve') {
+            itemToResolve.resolve(result);
+          } else if (type === 'reject') {
+            itemToResolve.reject(result);
+          }
+
+        };
+      }
+
+      // this resolution is done, does it have any queued promies? no so delete it
+      delete self.get('promiseQueue')[url];
     }
   },
 
@@ -329,7 +383,6 @@ var Store = Ember.Object.extend({
 
   // Makes an AJAX request that resolves to a resource model
   request: function(opt) {
-    //debugger;
     var self = this;
     opt.depaginate = opt.depaginate !== false;
     var boundTypeify = this._typeify.bind(this);
@@ -409,9 +462,11 @@ var Store = Ember.Object.extend({
   // Forget about all the resources that hae been previously remembered.
   reset: function() {
     var self = this;
+
     Ember.run(function() {
       self.set('_cache', Ember.Object.create());
       self.set('_foundAll', Ember.Object.create());
+      self.set('promiseQueue', {});
     });
   },
 
