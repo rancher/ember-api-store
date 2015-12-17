@@ -234,7 +234,7 @@ var Store = Ember.Object.extend({
             itemToResolve.reject(result);
           }
 
-        };
+        }
       }
 
       // this resolution is done, does it have any queued promies? no so delete it
