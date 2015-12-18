@@ -209,7 +209,7 @@ var Store = Ember.Object.extend({
           return result;
         }, (reason) => {
           resolvePromisesInQueue(url, reason, 'reject');
-          return reason;
+          return Ember.RSVP.reject(reason);
         });
 
         // set the promises array to empty indicating we've had 1 promise already
