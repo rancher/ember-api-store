@@ -99,7 +99,8 @@ var Type = Ember.Mixin.create(Serializable,{
 
     return this.request({
       method: 'GET',
-      url: url
+      url: url,
+      depaginate: false,
     });
   },
 
