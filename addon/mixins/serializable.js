@@ -28,7 +28,7 @@ var Serializable = Ember.Mixin.create({
 
     function recurse(obj,depth) {
       depth = depth || 0;
-      if ( depth > 5 )
+      if ( depth > 10 )
       {
         return null;
       }
