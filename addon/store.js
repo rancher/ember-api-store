@@ -365,7 +365,7 @@ var Store = Ember.Object.extend({
 
     if ( opt.timeout !== null && !opt.timeout )
     {
-      opt.timeout = 10000;
+      opt.timeout = 30000;
     }
 
     if ( opt.data )
