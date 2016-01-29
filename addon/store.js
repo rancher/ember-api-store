@@ -461,10 +461,12 @@ var Store = Ember.Object.extend({
   },
 
   // Forget about all the resources that hae been previously remembered.
+  generation: 1,
   reset: function() {
     this.set('_cache', Ember.Object.create());
     this.set('_foundAll', Ember.Object.create());
     this.set('promiseQueue', {});
+    this.incrementProperty('generation');
   },
 
   resetType: function(type) {
