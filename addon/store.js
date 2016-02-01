@@ -6,6 +6,7 @@ import { applyHeaders } from './utils/apply-headers';
 import { ajaxPromise } from './utils/ajax-promise';
 
 var Store = Ember.Object.extend({
+  defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
   metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'],
@@ -365,7 +366,7 @@ var Store = Ember.Object.extend({
 
     if ( opt.timeout !== null && !opt.timeout )
     {
-      opt.timeout = 30000;
+      opt.timeout = this.defaultTimeout;
     }
 
     if ( opt.data )
@@ -434,7 +435,19 @@ var Store = Ember.Object.extend({
         }
         else if ( err )
         {
-          body = {status: xhr.status, message: err};
+          if ( err === 'timeout' )
+          {
+            body = {
+              code: 'Timeout',
+              status: xhr.status,
+              message: `API request timeout (${opt.timeout/1000} sec)`,
+              detail: (opt.method||'GET') + ' ' + opt.url,
+            };
+          }
+          else
+          {
+            body = {status: xhr.status, message: err};
+          }
         }
         else
         {
