@@ -290,7 +290,7 @@ var Store = Ember.Object.extend({
 
   // Create a record, but do not insert into the cache
   createRecord: function(data, type) {
-    var type = normalizeType(type || data.type || '');
+    type = normalizeType(type || data.type || '');
     var container = this.get('container');
     var cls, schema;
 
@@ -400,7 +400,7 @@ var Store = Ember.Object.extend({
     var boundTypeify = this._typeify.bind(this);
 
     var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-      self.rawRequest(opt).then(success,fail)
+      self.rawRequest(opt).then(success,fail);
 
       function success(obj) {
         var xhr = obj.xhr;
@@ -430,7 +430,7 @@ var Store = Ember.Object.extend({
       }
 
       function fail(obj) {
-        reject(self._requestFailed(obj));
+        reject(self._requestFailed(obj,opt));
       }
 
     },'Request: '+ opt.url);
@@ -438,7 +438,7 @@ var Store = Ember.Object.extend({
     return promise;
   },
 
-  _requestFailed: function(obj) {
+  _requestFailed: function(obj,opt) {
     var response, body;
     var xhr = obj.xhr;
     var err = obj.err;
