@@ -277,10 +277,10 @@ var Store = Ember.Object.extend({
   },
 
   // Create a collection
-  createCollection: function(input) {
+  createCollection: function(input, key='data') {
     var cls = this.get('container').lookup('model:collection');
     var output = cls.constructor.create({
-      content: input.data,
+      content: input[key],
       store: this,
     });
 
@@ -289,8 +289,8 @@ var Store = Ember.Object.extend({
   },
 
   // Create a record, but do not insert into the cache
-  createRecord: function(data) {
-    var type = normalizeType(data.type||'');
+  createRecord: function(data, type) {
+    var type = normalizeType(type || data.type || '');
     var container = this.get('container');
     var cls, schema;
 
@@ -362,7 +362,10 @@ var Store = Ember.Object.extend({
     opt.url = url;
     opt.headers = this._headers(opt.headers);
     opt.processData = false;
-    opt.dataType = 'text'; // Don't let jQuery JSON parse
+    if ( typeof opt.dataType === 'undefined' )
+    {
+      opt.dataType = 'text'; // Don't let jQuery JSON parse
+    }
 
     if ( opt.timeout !== null && !opt.timeout )
     {
@@ -371,13 +374,16 @@ var Store = Ember.Object.extend({
 
     if ( opt.data )
     {
-      opt.contentType = 'application/json';
+      if ( !opt.contentType )
+      {
+        opt.contentType = 'application/json';
+      }
 
       if ( Serializable.detect(opt.data) )
       {
         opt.data = JSON.stringify(opt.data.serialize());
       }
-      else
+      else if ( typeof opt.data === 'object' )
       {
         opt.data = JSON.stringify(opt.data);
       }
@@ -394,7 +400,7 @@ var Store = Ember.Object.extend({
     var boundTypeify = this._typeify.bind(this);
 
     var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-      self.rawRequest(opt).then(success,fail);
+      self.rawRequest(opt).then(success,fail)
 
       function success(obj) {
         var xhr = obj.xhr;
@@ -424,57 +430,64 @@ var Store = Ember.Object.extend({
       }
 
       function fail(obj) {
-        var response, body;
-        var xhr = obj.xhr;
-        var err = obj.err;
-        var textStatus = obj.textStatus;
-
-        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
-        {
-          body = JSON.parse(xhr.responseText, boundTypeify);
-        }
-        else if ( err )
-        {
-          if ( err === 'timeout' )
-          {
-            body = {
-              code: 'Timeout',
-              status: xhr.status,
-              message: `API request timeout (${opt.timeout/1000} sec)`,
-              detail: (opt.method||'GET') + ' ' + opt.url,
-            };
-          }
-          else
-          {
-            body = {status: xhr.status, message: err};
-          }
-        }
-        else
-        {
-          body = {status: xhr.status, message: xhr.responseText};
-        }
-
-        if ( ApiError.detectInstance(body) )
-        {
-          response = body;
-        }
-        else
-        {
-          response = ApiError.create(body);
-        }
-
-        Object.defineProperty(response, 'xhr', { value: xhr, configurable: true, writable: true});
-        Object.defineProperty(response, 'textStatus', { value: textStatus, configurable: true, writable: true});
-
-        reject(response);
+        reject(self._requestFailed(obj));
       }
+
     },'Request: '+ opt.url);
 
     return promise;
   },
 
-  // Forget about all the resources that hae been previously remembered.
+  _requestFailed: function(obj) {
+    var response, body;
+    var xhr = obj.xhr;
+    var err = obj.err;
+    var textStatus = obj.textStatus;
+
+    if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
+    {
+      body = JSON.parse(xhr.responseText, this._typeify.bind(this));
+    }
+    else if ( err )
+    {
+      if ( err === 'timeout' )
+      {
+        body = {
+          code: 'Timeout',
+          status: xhr.status,
+          message: `API request timeout (${opt.timeout/1000} sec)`,
+          detail: (opt.method||'GET') + ' ' + opt.url,
+        };
+      }
+      else
+      {
+        body = {status: xhr.status, message: err};
+      }
+    }
+    else
+    {
+      body = {status: xhr.status, message: xhr.responseText};
+    }
+
+    if ( ApiError.detectInstance(body) )
+    {
+      response = body;
+    }
+    else
+    {
+      response = ApiError.create(body);
+    }
+
+    Object.defineProperty(response, 'xhr', { value: xhr, configurable: true, writable: true});
+    Object.defineProperty(response, 'textStatus', { value: textStatus, configurable: true, writable: true});
+
+    return response;
+  },
+
+  // You can observe this to make sure you know when the store is reset
   generation: 1,
+
+  // Forget about all the resources that hae been previously remembered.
   reset: function() {
     this.set('_cache', Ember.Object.create());
     this.set('_foundAll', Ember.Object.create());
@@ -539,14 +552,13 @@ var Store = Ember.Object.extend({
   // The value in the output for the key will be the value returned.
   // If no value is returned, the key will not be included in the output.
   _typeify: function(key, input) {
-    var output = this._createObject(input);
-
-    if ( !input || typeof input !== 'object' || !input.type || typeof input.type !== 'string' )
+    if ( typeof input !== 'object' || Ember.isArray(input) || !input || !input.type || typeof input.type !== 'string' )
     {
       // Basic values can be returned unmodified
-      return output;
+      return input;
     }
 
+    var output = this._createObject(input);
 
     // Actual resorces should be added or updated in the store
     var type = normalizeType(input.type);
