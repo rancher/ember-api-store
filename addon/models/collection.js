@@ -3,6 +3,8 @@ import TypeMixin from '../mixins/type';
 import { copyHeaders } from '../utils/apply-headers';
 import { normalizeType } from '../utils/normalize';
 
+const { getOwner } = Ember;
+
 export default Ember.ArrayProxy.extend(TypeMixin, {
   type: 'collection',
   createDefaults: null,
@@ -22,7 +24,7 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
       opt.headers = {};
     }
 
-    var cls = this.get('container').lookup('model:'+normalizeType(this.get('resourceType')));
+    var cls = getOwner(this).lookup('model:'+normalizeType(this.get('resourceType')));
     if ( cls && cls.constructor.alwaysInclude )
     {
       if ( !opt.include )

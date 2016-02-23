@@ -5,6 +5,8 @@ import { normalizeType } from './utils/normalize';
 import { applyHeaders } from './utils/apply-headers';
 import { ajaxPromise } from './utils/ajax-promise';
 
+const { getOwner } = Ember;
+
 var Store = Ember.Object.extend({
   defaultTimeout: 30000,
   defaultPageSize: 1000,
@@ -142,7 +144,7 @@ var Store = Ember.Object.extend({
         url += (url.indexOf('?') >= 0 ? '&' : '?') + 'limit=' + opt.limit;
       }
 
-      var cls = self.get('container').lookup('model:'+type);
+      var cls = getOwner(self).lookup('model:'+type);
       if ( cls && cls.constructor.alwaysInclude )
       {
         opt.include.addObjects(cls.constructor.alwaysInclude);
@@ -278,7 +280,7 @@ var Store = Ember.Object.extend({
 
   // Create a collection
   createCollection: function(input, key='data') {
-    var cls = this.get('container').lookup('model:collection');
+    var cls = getOwner(this).lookup('model:collection');
     var output = cls.constructor.create({
       content: input[key],
       store: this,
@@ -289,20 +291,19 @@ var Store = Ember.Object.extend({
   },
 
   // Create a record, but do not insert into the cache
-  createRecord: function(data, type) {
-    type = normalizeType(type || data.type || '');
-    var container = this.get('container');
+  createRecord: function(data) {
+    var type = normalizeType(data.type||'');
     var cls, schema;
 
     if ( type )
     {
-      cls = container.lookup('model:'+type);
+      cls = getOwner(this).lookup('model:'+type);
       schema = this.getById('schema',type);
     }
 
     if ( !cls )
     {
-      cls = container.lookup('model:resource');
+      cls = getOwner(this).lookup('model:resource');
     }
 
 
