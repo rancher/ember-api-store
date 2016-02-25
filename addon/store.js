@@ -42,14 +42,14 @@ var Store = Ember.Object.extend({
   },
 
   // Asynchronous, returns promise.
-  // find(type[,opt]): Query API for all records of [type]
+  // find(type[,null, opt]): Query API for all records of [type]
   // find(type,id[,opt]): Query API for record [id] of [type]
   // opt:
   //  filter: Filter by fields, e.g. {field: value, anotherField: anotherValue} (default: none)
   //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
   //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
-  //  headers: Headers to send int he request (default: none).  Also includes ones specified in the model constructor.
+  //  headers: Headers to send in the request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
     var self = this;
@@ -489,8 +489,30 @@ var Store = Ember.Object.extend({
 
   // Forget about all the resources that hae been previously remembered.
   reset: function() {
-    this.set('_cache', Ember.Object.create());
-    this.set('_foundAll', Ember.Object.create());
+    var cache = this.get('_cache');
+    if ( cache )
+    {
+      Object.keys(cache).forEach((key) => {
+        cache[key].clear();
+      });
+    }
+    else
+    {
+      this.set('_cache', Ember.Object.create());
+    }
+
+    var foundAll = this.get('_foundAll');
+    if ( foundAll )
+    {
+      Object.keys(foundAll).forEach((key) => {
+        foundAll[key] = false;
+      });
+    }
+    else
+    {
+      this.set('_foundAll', Ember.Object.create());
+    }
+
     this.set('promiseQueue', {});
     this.incrementProperty('generation');
   },
