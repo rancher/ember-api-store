@@ -4,12 +4,12 @@ import Collection from '../models/collection';
 import ApiError from '../models/error';
 import Schema from '../models/schema';
 
-export default function(registry, application) {
-  registry.register('store:main', Store);
-  registry.register('model:resource', Resource);
-  registry.register('model:collection', Collection);
-  registry.register('model:schema', Schema);
-  registry.register('model:error', ApiError);
+export default function(application) {
+  application.register('store:main', Store);
+  application.register('model:resource', Resource);
+  application.register('model:collection', Collection);
+  application.register('model:schema', Schema);
+  application.register('model:error', ApiError);
 
   application.inject('controller','store', 'store:main');
   application.inject('route',     'store', 'store:main');
