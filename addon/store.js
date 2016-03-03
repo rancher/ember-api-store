@@ -291,8 +291,8 @@ var Store = Ember.Object.extend({
   },
 
   // Create a record, but do not insert into the cache
-  createRecord: function(data) {
-    var type = normalizeType(data.type||'');
+  createRecord: function(data, type) {
+    type = normalizeType(type||data.type||'');
     var cls, schema;
 
     if ( type )
