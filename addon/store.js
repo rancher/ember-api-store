@@ -183,11 +183,12 @@ var Store = Ember.Object.extend({
 
 
       var later;
+      var promiseKey = JSON.stringify(opt.headers) + url;
 
       // check to see if the request is in the promiseQueue (promises)
-      if (promises[url]) {
+      if (promises[promiseKey]) {
         // get the filterd promise object
-        var filteredPromise = promises[url];
+        var filteredPromise = promises[promiseKey];
 
         later = Ember.RSVP.defer();
 
@@ -208,23 +209,22 @@ var Store = Ember.Object.extend({
             self.get('_foundAll').set(type,true);
           }
 
-          resolvePromisesInQueue(url, result, 'resolve');
+          resolvePromisesInQueue(promiseKey, result, 'resolve');
           return result;
         }, (reason) => {
-          resolvePromisesInQueue(url, reason, 'reject');
+          resolvePromisesInQueue(promiseKey, reason, 'reject');
           return Ember.RSVP.reject(reason);
         });
 
         // set the promises array to empty indicating we've had 1 promise already
-        promises[url] = [];
-
+        promises[promiseKey] = [];
       }
 
       return later;
     }
 
-    function resolvePromisesInQueue(url, result, type) {
-      var localPromises = self.get('promiseQueue')[url];
+    function resolvePromisesInQueue(key, result, type) {
+      var localPromises = self.get('promiseQueue')[key];
 
       if (localPromises && localPromises.length >= 1) {
 
@@ -241,7 +241,7 @@ var Store = Ember.Object.extend({
       }
 
       // this resolution is done, does it have any queued promies? no so delete it
-      delete self.get('promiseQueue')[url];
+      delete self.get('promiseQueue')[key];
     }
   },
 

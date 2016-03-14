@@ -187,7 +187,7 @@ var Type = Ember.Mixin.create(Serializable,{
     return this.request(opt);
   },
 
-  save: function() {
+  save: function(opt) {
     var self = this;
     var store = this.get('store');
 
@@ -218,11 +218,23 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['actions'];
     delete json['actionLinks'];
 
-    return this.request({
-      method: method,
-      url: url,
-      data: json,
-    }).then(function(newData) {
+    opt = opt || {};
+    if ( typeof opt.method === 'undefined' )
+    {
+      opt.method = method;
+    }
+
+    if ( typeof opt.url === 'undefined' )
+    {
+      opt.url = url;
+    }
+
+    if ( typeof opt.data === 'undefined' )
+    {
+      opt.data = json;
+    }
+
+    return this.request(opt).then(function(newData) {
       if ( !newData || !Type.detect(newData) )
       {
         return newData;
@@ -267,7 +279,7 @@ var Type = Ember.Mixin.create(Serializable,{
     });
   },
 
-  reload: function() {
+  reload: function(opt) {
     if ( !this.hasLink('self') )
     {
       return Ember.RSVP.reject('Resource has no self link');
@@ -281,11 +293,19 @@ var Type = Ember.Mixin.create(Serializable,{
       });
     }
 
+    opt = opt || {};
+    if ( typeof opt.method === 'undefined' )
+    {
+      opt.method = 'GET';
+    }
+
+    if ( typeof opt.url === 'undefined' )
+    {
+      opt.url = url;
+    }
+
     var self = this;
-    return this.request({
-      method: 'GET',
-      url: url,
-    }).then(function(/*newData*/) {
+    return this.request(opt).then(function(/*newData*/) {
       return self;
     });
   },
