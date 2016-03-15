@@ -406,7 +406,11 @@ var Store = Ember.Object.extend({
       function success(obj) {
         var xhr = obj.xhr;
 
-        if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
+        if ( xhr.status === 204 )
+        {
+          resolve();
+        }
+        else if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
         {
           var response = JSON.parse(xhr.responseText, boundTypeify);
 
