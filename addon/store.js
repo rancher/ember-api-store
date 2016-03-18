@@ -7,11 +7,32 @@ import { ajaxPromise } from './utils/ajax-promise';
 
 const { getOwner } = Ember;
 
+export const defaultMetaKeys = ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
+export const defaultSkipTypeifyKeys = [];
+
 var Store = Ember.Object.extend({
   defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
-  metaKeys: ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'],
+  metaKeys: null,
+  skipTypeifyKeys: null,
+
+  init: function() {
+    this._super();
+
+    if (!this.get('metaKeys') )
+    {
+      this.set('metaKeys', defaultMetaKeys.slice());
+    }
+
+    if (!this.get('skipTypeifyKeys') )
+    {
+      this.set('skipTypeifyKeys', defaultSkipTypeifyKeys.slice());
+    }
+
+    this.reset();
+
+  },
 
 
   promiseQueue: null,
@@ -202,6 +223,7 @@ var Store = Ember.Object.extend({
           url: url,
           depaginate: opt.depaginate,
           headers: newHeaders,
+          include: opt.include
         }).then((result) => {
 
           if ( isForAll )
@@ -414,6 +436,16 @@ var Store = Ember.Object.extend({
         {
           var response = JSON.parse(xhr.responseText, boundTypeify);
 
+          if ( opt.include && opt.include.length && response.forEach )
+          {
+            // Note which keys were included
+            response.forEach((obj) => {
+              obj.includedKeys = obj.includedKeys || [];
+              obj.includedKeys.pushObjects(opt.include.slice());
+              obj.includedKeys = obj.includedKeys.uniq();
+            });
+          }
+
           Object.defineProperty(response, 'xhr', { value: obj.xhr, configurable: true, writable: true});
           Object.defineProperty(response, 'textStatus', { value: obj.textStatus, configurable: true, writable: true});
 
@@ -534,10 +566,6 @@ var Store = Ember.Object.extend({
   _cache: null,
   _foundAll: null,
 
-  init: function() {
-    this.reset();
-  },
-
   // Get the cache group for [type]
   _group: function(type) {
     type = normalizeType(type);
@@ -579,7 +607,12 @@ var Store = Ember.Object.extend({
   // The value in the output for the key will be the value returned.
   // If no value is returned, the key will not be included in the output.
   _typeify: function(key, input) {
-    if ( typeof input !== 'object' || Ember.isArray(input) || !input || !input.type || typeof input.type !== 'string' )
+    if (  this.get('skipTypeifyKeys').indexOf(key) >= 0 ||
+          typeof input !== 'object' ||
+          Ember.isArray(input) ||
+          !input ||
+          !input.type || typeof input.type !== 'string'
+       )
     {
       // Basic values can be returned unmodified
       return input;

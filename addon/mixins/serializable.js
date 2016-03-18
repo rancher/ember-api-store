@@ -61,10 +61,9 @@ var Serializable = Ember.Mixin.create({
 
   // Properties to ignore because they're built-in to ember, ember-debug, or the store
   concatenatedProperties: ['reservedKeys'],
-  reservedKeys: ['reservedKeys','__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey','_registry','cache','factoryCache','validationCache'],
+  reservedKeys: ['reservedKeys','includedKeys','__nextSuper','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','_debugContainerKey','_registry','cache','factoryCache','validationCache'],
 
   allKeys: function(withIncludes) {
-    var self = this;
     var reserved = this.get('reservedKeys');
 
     var alwaysIncluded = [];
@@ -73,9 +72,15 @@ var Serializable = Ember.Mixin.create({
       alwaysIncluded = this.constructor.alwaysInclude || [];
     }
 
-    var out = Object.keys(this).filter(function(k) {
-      return reserved.indexOf(k) === -1 && alwaysIncluded.indexOf(k) === -1 && Ember.typeOf(Ember.get(self,k)) !== 'function';
+    var thisIncluded = this.get('includedKeys')||[];
+
+    var out = Object.keys(this).filter((k) => {
+      return  reserved.indexOf(k) === -1 &&
+              alwaysIncluded.indexOf(k) === -1 &&
+              thisIncluded.indexOf(k) === -1 &&
+              Ember.typeOf(Ember.get(this,k)) !== 'function';
     });
+
     return out;
   },
 

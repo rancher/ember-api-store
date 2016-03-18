@@ -214,6 +214,10 @@ var Type = Ember.Mixin.create(Serializable,{
     }
 
     var json = this.serialize();
+    // Don't send included link maps/arrays
+    Object.keys(json.links||{}).forEach((k) => {
+      delete json[k];
+    });
     delete json['links'];
     delete json['actions'];
     delete json['actionLinks'];
