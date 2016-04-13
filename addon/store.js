@@ -624,6 +624,12 @@ var Store = Ember.Object.extend({
         input.actionLinks = input.actions;
         delete input.actions;
       }
+
+      if ( type === 'schema' ) {
+        input._id = input.id;
+        input.id = normalizeType(input.id);
+      }
+
       input.store = self;
       return cls.constructor.create(input);
     }));
