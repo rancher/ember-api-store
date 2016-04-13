@@ -202,9 +202,8 @@ var Store = Ember.Object.extend({
       }
       applyHeaders(opt.headers, newHeaders, true);
 
-
       var later;
-      var promiseKey = JSON.stringify(opt.headers) + url;
+      var promiseKey = JSON.stringify(newHeaders) + url;
 
       // check to see if the request is in the promiseQueue (promises)
       if (promises[promiseKey]) {
@@ -219,13 +218,10 @@ var Store = Ember.Object.extend({
 
       } else { // request is not in the promiseQueue
 
-        later = self.request({
-          url: url,
-          depaginate: opt.depaginate,
-          headers: newHeaders,
-          include: opt.include
-        }).then((result) => {
+        opt.url = url;
+        opt.headers = newHeaders;
 
+        later = self.request(opt).then((result) => {
           if ( isForAll )
           {
             self.get('_foundAll').set(type,true);
@@ -328,6 +324,7 @@ var Store = Ember.Object.extend({
       cls = getOwner(this).lookup('model:resource');
     }
 
+    var cons = cls.constructor;
 
     var input;
     if ( schema )
@@ -346,12 +343,14 @@ var Store = Ember.Object.extend({
       delete input.actions;
     }
 
-    if ( typeof cls.constructor.mangleIn === 'function' )
+    if ( cons.mangleIn && typeof cons.mangleIn === 'function' )
     {
-      input = cls.constructor.mangleIn(input,this);
+      input = cons.mangleIn(input,this);
     }
 
-    var output = cls.constructor.create(input);
+    input.store = this;
+
+    var output = cons.create(input);
     return output;
   },
 
@@ -373,16 +372,28 @@ var Store = Ember.Object.extend({
     return out;
   },
 
-  // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
-  // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
-  rawRequest: function(opt) {
-    var url = opt.url;
-    if ( url.indexOf('http') !== 0 && url.indexOf('/') !== 0 )
+  normalizeUrl: function(url, includingAbsolute=false) {
+    var origin = window.location.origin;
+
+    // Make absolute URLs to ourselves root-relative
+    if ( includingAbsolute && url.indexOf(origin) === 0 )
+    {
+      url = url.substr(origin.length);
+    }
+
+    // Make relative URLs root-relative
+    if ( !url.match(/^https?:/) && url.indexOf('/') !== 0 )
     {
       url = this.get('baseUrl').replace(/\/\+$/,'') + '/' + url;
     }
 
-    opt.url = url;
+    return url;
+  },
+
+  // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
+  // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
+  rawRequest: function(opt) {
+    opt.url = this.normalizeUrl(opt.url);
     opt.headers = this._headers(opt.headers);
     opt.processData = false;
     if ( typeof opt.dataType === 'undefined' )
@@ -419,8 +430,13 @@ var Store = Ember.Object.extend({
   // Makes an AJAX request that resolves to a resource model
   request: function(opt) {
     var self = this;
+    opt.url = this.normalizeUrl(opt.url);
     opt.depaginate = opt.depaginate !== false;
     var boundTypeify = this._typeify.bind(this);
+
+    if ( this.mungeRequest ) {
+      opt = this.mungeRequest(opt);
+    }
 
     var promise = new Ember.RSVP.Promise(function(resolve,reject) {
       self.rawRequest(opt).then(success,fail);
@@ -585,10 +601,32 @@ var Store = Ember.Object.extend({
     type = normalizeType(type);
     var group = this._group(type);
     group.pushObject(obj);
-    if ( typeof obj.wasAdded === 'function' )
+    if ( obj.wasAdded && typeof obj.wasAdded === 'function' )
     {
       obj.wasAdded();
     }
+  },
+
+  // Add a lot of instances of the same type quickly.
+  //   - There must be a model for the type already defined.
+  //   - Instances cannot contain any nested other types (e.g. include or subtypes),
+  //     they will not be deserialzed into their correct type.
+  // Basically this is just for loading schemas faster.
+  _bulkAdd: function(type, pojos) {
+    var self = this;
+    type = normalizeType(type);
+    var group = this._group(type);
+    var cls = getOwner(this).lookup('model:'+type);
+    group.pushObjects(pojos.map(function(input) {
+      // actions is very unhappy property name for Ember...
+      if ( input.actions )
+      {
+        input.actionLinks = input.actions;
+        delete input.actions;
+      }
+      input.store = self;
+      return cls.constructor.create(input);
+    }));
   },
 
   // Remove a record of [type] form cache, given the id or the record instance.
@@ -596,7 +634,7 @@ var Store = Ember.Object.extend({
     type = normalizeType(type);
     var group = this._group(type);
     group.removeObject(obj);
-    if ( typeof obj.wasRemoved === 'function' )
+    if ( obj.wasRemoved && typeof obj.wasRemoved === 'function' )
     {
       obj.wasRemoved();
     }
