@@ -4,16 +4,17 @@ import Collection from '../models/collection';
 import ApiError from '../models/error';
 import Schema from '../models/schema';
 
-export default function(application) {
-  application.register('store:main', Store);
-  application.register('model:resource', Resource);
-  application.register('model:collection', Collection);
-  application.register('model:schema', Schema);
-  application.register('model:error', ApiError);
+export default function(name,variable) {
+  return function(application) {
+    application.register('store:'+name, Store);
+    application.register('model:resource', Resource);
+    application.register('model:collection', Collection);
+    application.register('model:schema', Schema);
+    application.register('model:error', ApiError);
 
-  application.inject('controller','store', 'store:main');
-  application.inject('route',     'store', 'store:main');
-  application.inject('model',     'store', 'store:main');
-  application.inject('component', 'store', 'store:main');
-  application.inject('service',   'store', 'store:main');
+    application.inject('controller', variable, 'store:'+name);
+    application.inject('route',      variable, 'store:'+name);
+    application.inject('component',  variable, 'store:'+name);
+    application.inject('service',    variable, 'store:'+name);
+  };
 }
