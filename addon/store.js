@@ -301,8 +301,9 @@ var Store = Ember.Object.extend({
     var cls = getOwner(this).lookup('model:collection');
     var output = cls.constructor.create({
       content: input[key],
-      store: this,
     });
+
+    Object.defineProperty(output, 'store', { value: this, configurable: true});
 
     output.setProperties(Ember.getProperties(input, this.get('metaKeys')));
     return output;
@@ -348,9 +349,9 @@ var Store = Ember.Object.extend({
       input = cons.mangleIn(input,this);
     }
 
-    input.store = this;
-
     var output = cons.create(input);
+
+    Object.defineProperty(output, 'store', { value: this, configurable: true});
     return output;
   },
 
