@@ -547,7 +547,9 @@ var Store = Ember.Object.extend({
     if ( cache )
     {
       Object.keys(cache).forEach((key) => {
-        cache[key].clear();
+        if ( cache[key] && cache[key].clear ) {
+          cache[key].clear();
+        }
       });
     }
     else
