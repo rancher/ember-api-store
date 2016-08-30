@@ -561,7 +561,7 @@ var Store = Ember.Object.extend({
     if ( foundAll )
     {
       Object.keys(foundAll).forEach((key) => {
-        foundAll[key] = false;
+        Ember.set(foundAll, key, false);
       });
     }
     else
