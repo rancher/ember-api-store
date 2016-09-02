@@ -338,7 +338,7 @@ var Store = Ember.Object.extend({
     }
 
     // actions is very unhappy property name for Ember...
-    if ( input.actions )
+    if ( typeof input.actions !== 'undefined' )
     {
       input.actionLinks = input.actions;
       delete input.actions;
