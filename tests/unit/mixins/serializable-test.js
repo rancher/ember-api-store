@@ -183,7 +183,7 @@ test('eachKeys maintains scope', function() {
   var subject = SerializableObject.create({a: 1, b: 2, c: 3});
 
   var inside;
-  subject.eachKeys(function(v,k) {
+  subject.eachKeys(function(/*v,k*/) {
     inside = this;
   });
 
