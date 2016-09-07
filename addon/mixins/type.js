@@ -1,6 +1,7 @@
 import Ember from 'ember';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
+import { urlOptions } from '../utils/url-options';
 import { copyHeaders } from '../utils/apply-headers';
 
 var Type = Ember.Mixin.create(Serializable,{
@@ -113,29 +114,7 @@ var Type = Ember.Mixin.create(Serializable,{
       throw new Error('Unknown link');
     }
 
-    if ( opt.include )
-    {
-      if ( !Ember.isArray(opt.include) )
-      {
-        opt.include = [opt.include];
-      }
-
-      opt.include.forEach(function(key) {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
-      });
-    }
-
-    if ( opt.sort )
-    {
-      if ( !Ember.isArray(opt.sort) )
-      {
-        opt.sort = [opt.sort];
-      }
-
-      opt.sort.forEach(function(key) {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'sort=' + encodeURIComponent(key);
-      });
-    }
+    url = urlOptions(url, opt);
 
     return this.request({
       method: 'GET',

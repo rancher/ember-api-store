@@ -4,6 +4,7 @@ import ApiError from './models/error';
 import { normalizeType } from './utils/normalize';
 import { applyHeaders } from './utils/apply-headers';
 import { ajaxPromise } from './utils/ajax-promise';
+import { urlOptions } from './utils/url-options';
 
 const { getOwner } = Ember;
 
@@ -128,71 +129,9 @@ var Store = Ember.Object.extend({
 
     function findWithUrl(url) {
       var promises = self.get('promiseQueue');
-      // Filter
-      // @TODO friendly support for modifiers
-      if ( opt.filter )
-      {
-        var keys = Object.keys(opt.filter);
-        keys.forEach(function(key) {
-          var vals = opt.filter[key];
-          if ( !Ember.isArray(vals) )
-          {
-            vals = [vals];
-          }
-
-          vals.forEach(function(val) {
-            url += (url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(val);
-          });
-        });
-      }
-      // End: Filter
-
-      // Include
-      if ( opt.include )
-      {
-        if ( !Ember.isArray(opt.include) )
-        {
-          opt.include = [opt.include];
-        }
-      }
-      else
-      {
-        opt.include = [];
-      }
-
-      if ( opt.limit )
-      {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'limit=' + opt.limit;
-      }
-
       var cls = getOwner(self).lookup('model:'+type);
-      if ( cls && cls.constructor.alwaysInclude )
-      {
-        opt.include.addObjects(cls.constructor.alwaysInclude);
-      }
 
-      opt.include.forEach(function(key) {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
-      });
-      // End: Include
-
-      // Sort
-      var sortBy = opt.sortBy;
-      if ( !sortBy && cls)
-      {
-        sortBy = cls.constructor.defaultSortBy;
-      }
-
-      if ( sortBy )
-      {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'sort=' + encodeURIComponent(sortBy);
-      }
-
-      if ( opt.sortOrder && opt.sortOrder )
-      {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'order=' + encodeURIComponent(opt.sortOrder);
-      }
-      // End: Sort
+      url = urlOptions(url,opt,cls);
 
       // Headers
       var newHeaders = {};
