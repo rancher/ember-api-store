@@ -3,6 +3,7 @@ import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
 import { urlOptions } from '../utils/url-options';
 import { copyHeaders } from '../utils/apply-headers';
+import { urlOptions } from '../utils/url-options';
 
 var Type = Ember.Mixin.create(Serializable,{
   id: null,

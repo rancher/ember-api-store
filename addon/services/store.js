@@ -5,6 +5,7 @@ import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
 import { urlOptions } from './utils/url-options';
 import fetch from 'ember-api-store/utils/fetch';
+import { urlOptions } from './utils/url-options';
 
 const { getOwner } = Ember;
 
@@ -22,6 +23,9 @@ var Store = Ember.Service.extend({
   replaceActions: 'actionLinks',
   shoeboxName: 'ember-api-store',
   headers: null,
+
+  arrayProxyClass: Ember.ArrayProxy,
+  arrayProxyKey: 'content',
 
   // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
   removeAfterDelete: true,
@@ -104,11 +108,11 @@ var Store = Ember.Service.extend({
   //  filter: Filter by fields, e.g. {field: value, anotherField: anotherValue} (default: none)
   //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
   //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
+  //  limit: Number of reqords to return per page (default: 1000)
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
   //  headers: Headers to send in the request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find: function(type, id, opt) {
-    var self = this;
     type = normalizeType(type);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
@@ -130,13 +134,13 @@ var Store = Ember.Service.extend({
     // See if we already have this resource, unless forceReload is on.
     if ( opt.forceReload !== true )
     {
-      if ( isForAll && self._state.foundAll[type] )
+      if ( isForAll && this._state.foundAll[type] )
       {
-        return Ember.RSVP.resolve(self.all(type),'Cached find all '+type);
+        return Ember.RSVP.resolve(this.all(type),'Cached find all '+type);
       }
       else if ( isCacheable && id )
       {
-        var existing = self.getById(type,id);
+        var existing = this.getById(type,id);
         if ( existing )
         {
           return Ember.RSVP.resolve(existing,'Cached find '+type+':'+id);
@@ -148,132 +152,92 @@ var Store = Ember.Service.extend({
     // This is used for bootstraping to load the schema initially, and shouldn't be used for much else.
     if ( opt.url )
     {
-      return findWithUrl(opt.url);
+      return this._findWithUrl(opt.url);
     }
     else
     {
       // Otherwise lookup the schema for the type and generate the URL based on it.
-      return self.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then(function(schema) {
+      return self.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then((schema) => {
         var url = schema.linkFor('collection') + (id ? '/'+encodeURIComponent(id) : '');
-        return findWithUrl(url);
+        return this._findWithUrl(url);
       });
     }
+  },
 
-    function findWithUrl(url) {
-      var queue = self._state.findQueue;
-      // Filter
-      // @TODO friendly support for modifiers
-      if ( opt.filter )
-      {
-        var keys = Object.keys(opt.filter);
-        keys.forEach(function(key) {
-          var vals = opt.filter[key];
-          if ( !Ember.isArray(vals) )
-          {
-            vals = [vals];
-          }
+  _findWithUrl: function(url) {
+    var queue = this._state.findQueue;
+    var cls = getOwner(this).lookup('model:'+type);
+    url = urlOptions(url,opt,cls);
 
-          vals.forEach(function(val) {
-            url += (url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(key) + '=' + encodeURIComponent(val);
-          });
-        });
-      }
-      // End: Filter
+    // Collect Headers
+    var newHeaders = {};
+    if ( cls && cls.constructor.headers )
+    {
+      applyHeaders(cls.constructor.headers, newHeaders, true);
+    }
+    applyHeaders(opt.headers, newHeaders, true);
+    // End: Collect headers
 
-      // Include
-      if ( opt.include )
-      {
-        if ( !Ember.isArray(opt.include) )
-        {
-          opt.include = [opt.include];
-        }
-      }
-      else
-      {
-        opt.include = [];
-      }
+    var later;
+    var queueKey = JSON.stringify(newHeaders) + url;
 
-      if ( opt.limit )
-      {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'limit=' + opt.limit;
-      }
+    // check to see if the request is in the findQueue
+    if (queue[queueKey]) {
+      // get the filterd promise object
+      var filteredPromise = queue[queueKey];
+      let defer = Ember.RSVP.defer();
+      filteredPromise.push(defer);
+      later = defer.promise;
 
-      var cls = getOwner(self).lookup('model:'+type);
+    } else { // request is not in the findQueue
 
-      url = urlOptions(url,opt,cls);
+      opt.url = url;
+      opt.headers = newHeaders;
 
-      // Headers
-      var newHeaders = {};
-      if ( cls && cls.constructor.headers )
-      {
-        applyHeaders(cls.constructor.headers, newHeaders, true);
-      }
-      applyHeaders(opt.headers, newHeaders, true);
-
-      var later;
-      var queueKey = JSON.stringify(newHeaders) + url;
-
-      // check to see if the request is in the findQueue
-      if (queue[queueKey]) {
-        // get the filterd promise object
-        var filteredPromise = queue[queueKey];
-
-        later = Ember.RSVP.defer();
-
-        filteredPromise.push(later);
-
-        later = later.promise;
-
-      } else { // request is not in the findQueue
-
-        opt.url = url;
-        opt.headers = newHeaders;
-
-        later = self.request(opt).then((result) => {
-          if ( isForAll )
-          {
-            self._state.foundAll[type] = true;
-          }
-
-          finish(queueKey, result, 'resolve');
-          return result;
-        }, (reason) => {
-          finish(queueKey, reason, 'reject');
-          return Ember.RSVP.reject(reason);
-        });
-
-        // set the queue array to empty indicating we've had 1 promise already
-        queue[queueKey] = [];
-      }
-
-      return later;
-
-      function finish(key, result, type) {
-        var promises = queue[key];
-
-        if (promises) {
-          while (promises.length >= 1) {
-            var itemToResolve = promises.pop();
-
-            if (type === 'resolve') {
-              itemToResolve.resolve(result);
-            } else if (type === 'reject') {
-              itemToResolve.reject(result);
-            }
-          }
+      later = self.request(opt).then((result) => {
+        if ( isForAll ) {
+          self._state.foundAll[type] = true;
         }
 
-        delete queue[key];
+        this._finishFind(queueKey, result, 'resolve');
+        return result;
+      }, (reason) => {
+        this._finishFind(queueKey, reason, 'reject');
+        return Ember.RSVP.reject(reason);
+      });
+
+      // set the queue array to empty indicating we've had 1 promise already
+      queue[queueKey] = [];
+    }
+
+    return later;
+
+  },
+
+  function _finishFind(key, result, type) {
+    var queue = this._state.findQueue;
+    var promises = queue[key];
+
+    if (promises) {
+      while (promises.length) {
+        if (type === 'resolve') {
+          promises.pop().resolve(result);
+        } else if (type === 'reject') {
+          promises.pop().reject(result);
+        }
       }
     }
-  },
+
+    delete queue[key];
+  }
+
 
   // Returns a 'live' array of all records of [type] in the cache.
   all: function(type) {
     type = normalizeType(type);
     var group = this._group(type);
-    var proxy = Ember.ArrayProxy.create({
-      content: group
+    var proxy = this.arrayProxyClass.create({
+      [this.arrayProxyKey]: group
     });
 
     return proxy;
