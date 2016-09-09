@@ -3,9 +3,14 @@ import Serializable from '../mixins/serializable';
 import ApiError from '../models/error';
 import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
+<<<<<<< HEAD
 import { urlOptions } from './utils/url-options';
 import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from './utils/url-options';
+=======
+import { fetch } from 'ember-api-store/utils/fetch';
+import { urlOptions } from '../utils/url-options';
+>>>>>>> v2/fastboot tweaks
 
 const { getOwner } = Ember;
 
@@ -31,11 +36,11 @@ var Store = Ember.Service.extend({
   removeAfterDelete: true,
 
 
-  fastboot: function() {
+  fastboot: Ember.computed(function() {
     return Ember.getOwner(this).lookup('service:fastboot');
-  }.property(),
+  }),
 
-  init: function() {
+  init() {
     this._super();
 
     if (!this.get('metaKeys') )
@@ -64,7 +69,11 @@ var Store = Ember.Service.extend({
       }
       else
       {
-        this._state = fastboot.get('shoebox').retrieve(name);
+        let box = fastboot.get('shoebox').retrieve(name);
+        if ( box )
+        {
+          this._state = box;
+        }
       }
     }
 
@@ -79,25 +88,25 @@ var Store = Ember.Service.extend({
 
   // Synchronously get record from local cache by [type] and [id].
   // Returns undefined if the record is not in cache, does not talk to API.
-  getById: function(type, id) {
+  getById(type, id) {
     type = normalizeType(type);
     var group = this._group(type);
     return group.filterBy('id',id)[0];
   },
 
   // Synchronously returns whether record for [type] and [id] is in the local cache.
-  hasRecordFor: function(type, id) {
+  hasRecordFor(type, id) {
     return !!this.getById(type,id);
   },
 
   // Synchronously returns whether this exact record object is in the local cache
-  hasRecord: function(obj) {
+  hasRecord(obj) {
     var type = normalizeType(obj.get('type'));
     var group = this._group(type);
     return group.indexOf(obj) >= 0;
   },
 
-  isCacheable: function(opt) {
+  isCacheable(opt) {
     return !opt || (opt.depaginate && !opt.filter && !opt.include);
   },
 
@@ -112,7 +121,7 @@ var Store = Ember.Service.extend({
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
   //  headers: Headers to send in the request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
-  find: function(type, id, opt) {
+  find(type, id, opt) {
     type = normalizeType(type);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
@@ -152,88 +161,20 @@ var Store = Ember.Service.extend({
     // This is used for bootstraping to load the schema initially, and shouldn't be used for much else.
     if ( opt.url )
     {
-      return this._findWithUrl(opt.url);
+      return this._findWithUrl(opt.url, type, opt);
     }
     else
     {
       // Otherwise lookup the schema for the type and generate the URL based on it.
-      return self.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then((schema) => {
+      return this.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then((schema) => {
         var url = schema.linkFor('collection') + (id ? '/'+encodeURIComponent(id) : '');
-        return this._findWithUrl(url);
+        return this._findWithUrl(url, type, opt);
       });
     }
   },
-
-  _findWithUrl: function(url) {
-    var queue = this._state.findQueue;
-    var cls = getOwner(this).lookup('model:'+type);
-    url = urlOptions(url,opt,cls);
-
-    // Collect Headers
-    var newHeaders = {};
-    if ( cls && cls.constructor.headers )
-    {
-      applyHeaders(cls.constructor.headers, newHeaders, true);
-    }
-    applyHeaders(opt.headers, newHeaders, true);
-    // End: Collect headers
-
-    var later;
-    var queueKey = JSON.stringify(newHeaders) + url;
-
-    // check to see if the request is in the findQueue
-    if (queue[queueKey]) {
-      // get the filterd promise object
-      var filteredPromise = queue[queueKey];
-      let defer = Ember.RSVP.defer();
-      filteredPromise.push(defer);
-      later = defer.promise;
-
-    } else { // request is not in the findQueue
-
-      opt.url = url;
-      opt.headers = newHeaders;
-
-      later = self.request(opt).then((result) => {
-        if ( isForAll ) {
-          self._state.foundAll[type] = true;
-        }
-
-        this._finishFind(queueKey, result, 'resolve');
-        return result;
-      }, (reason) => {
-        this._finishFind(queueKey, reason, 'reject');
-        return Ember.RSVP.reject(reason);
-      });
-
-      // set the queue array to empty indicating we've had 1 promise already
-      queue[queueKey] = [];
-    }
-
-    return later;
-
-  },
-
-  function _finishFind(key, result, type) {
-    var queue = this._state.findQueue;
-    var promises = queue[key];
-
-    if (promises) {
-      while (promises.length) {
-        if (type === 'resolve') {
-          promises.pop().resolve(result);
-        } else if (type === 'reject') {
-          promises.pop().reject(result);
-        }
-      }
-    }
-
-    delete queue[key];
-  }
-
 
   // Returns a 'live' array of all records of [type] in the cache.
-  all: function(type) {
+  all(type) {
     type = normalizeType(type);
     var group = this._group(type);
     var proxy = this.arrayProxyClass.create({
@@ -243,39 +184,28 @@ var Store = Ember.Service.extend({
     return proxy;
   },
 
-  haveAll: function(type) {
+  haveAll(type) {
     type = normalizeType(type);
     return this._state.foundAll[type];
   },
 
   // find(type) && return all(type)
-  findAll: function(type) {
+  findAll(type) {
     type = normalizeType(type);
-    var self = this;
 
-    if ( self.haveAll(type) )
+    if ( this.haveAll(type) )
     {
-      return Ember.RSVP.resolve(self.all(type),'All '+ type + ' already cached');
+      return Ember.RSVP.resolve(this.all(type),'All '+ type + ' already cached');
     }
     else
     {
-      return this.find(type).then(function() {
-        return self.all(type);
+      return this.find(type).then(() => {
+        return this.all(type);
       });
     }
   },
 
-  _headers: function(perRequest) {
-    let out = {
-      'accept': 'application/json',
-    };
-
-    applyHeaders(this.get('headers'), out);
-    applyHeaders(perRequest, out);
-    return out;
-  },
-
-  normalizeUrl: function(url, includingAbsolute=false) {
+  normalizeUrl(url, includingAbsolute=false) {
     var origin = window.location.origin;
 
     // Make absolute URLs to ourselves root-relative
@@ -295,7 +225,7 @@ var Store = Ember.Service.extend({
 
   // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
   // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
-  rawRequest: function(opt) {
+  rawRequest(opt) {
     opt.url = this.normalizeUrl(opt.url);
     opt.headers = this._headers(opt.headers);
     opt.processData = false;
@@ -326,12 +256,11 @@ var Store = Ember.Service.extend({
       }
     }
 
-    var promise = fetch(opt.url, opt);
-    return promise;
+    return fetch(opt.url, opt);
   },
 
   // Makes an AJAX request that resolves to a resource model
-  request: function(opt) {
+  request(opt) {
     var self = this;
     opt.url = this.normalizeUrl(opt.url);
     opt.depaginate = opt.depaginate !== false;
@@ -394,7 +323,126 @@ var Store = Ember.Service.extend({
     return promise;
   },
 
-  _requestFailed: function(obj,opt) {
+  // Forget about all the resources that hae been previously remembered.
+  reset() {
+    var cache = this._state.cache;
+    if ( cache )
+    {
+      Object.keys(cache).forEach((key) => {
+        if ( cache[key] && cache[key].clear ) {
+          cache[key].clear();
+        }
+      });
+    }
+    else
+    {
+      this._state.cache = {};
+    }
+
+    var foundAll = this._state.foundAll;
+    if ( foundAll )
+    {
+      Object.keys(foundAll).forEach((key) => {
+        foundAll[key] = false;
+      });
+    }
+    else
+    {
+      this._state.foundAll = {};
+    }
+
+    this._state.findQueue = {};
+    this.incrementProperty('generation');
+  },
+
+  resetType(type) {
+    type = normalizeType(type);
+    var group = this._group(type);
+    this._state.foundAll[type] = false;
+    group.clear();
+  },
+
+  // ---------
+  // Below here be dragons
+  // ---------
+  _headers(perRequest) {
+    let out = {
+      'accept': 'application/json',
+    };
+
+    applyHeaders(this.get('headers'), out);
+    applyHeaders(perRequest, out);
+    return out;
+  },
+
+  _findWithUrl(url, type, opt) {
+    var queue = this._state.findQueue;
+    var cls = getOwner(this).lookup('model:'+type);
+    url = urlOptions(url,opt,cls);
+
+    // Collect Headers
+    var newHeaders = {};
+    if ( cls && cls.constructor.headers )
+    {
+      applyHeaders(cls.constructor.headers, newHeaders, true);
+    }
+    applyHeaders(opt.headers, newHeaders, true);
+    // End: Collect headers
+
+    var later;
+    var queueKey = JSON.stringify(newHeaders) + url;
+
+    // check to see if the request is in the findQueue
+    if (queue[queueKey]) {
+      // get the filterd promise object
+      var filteredPromise = queue[queueKey];
+      let defer = Ember.RSVP.defer();
+      filteredPromise.push(defer);
+      later = defer.promise;
+
+    } else { // request is not in the findQueue
+
+      opt.url = url;
+      opt.headers = newHeaders;
+
+      later = this.request(opt).then((result) => {
+        if ( isForAll ) {
+          this._state.foundAll[type] = true;
+        }
+
+        this._finishFind(queueKey, result, 'resolve');
+        return result;
+      }, (reason) => {
+        this._finishFind(queueKey, reason, 'reject');
+        return Ember.RSVP.reject(reason);
+      });
+
+      // set the queue array to empty indicating we've had 1 promise already
+      queue[queueKey] = [];
+    }
+
+    return later;
+
+  },
+
+  _finishFind(key, result, type) {
+    var queue = this._state.findQueue;
+    var promises = queue[key];
+
+    if (promises) {
+      while (promises.length) {
+        if (type === 'resolve') {
+          promises.pop().resolve(result);
+        } else if (type === 'reject') {
+          promises.pop().reject(result);
+        }
+      }
+    }
+
+    delete queue[key];
+  },
+
+  _requestFailed(obj,opt) {
     var response, body;
     var xhr = obj.xhr;
     var err = obj.err;
@@ -440,49 +488,8 @@ var Store = Ember.Service.extend({
     return response;
   },
 
-  // Forget about all the resources that hae been previously remembered.
-  reset: function() {
-    var cache = this._state.cache;
-    if ( cache )
-    {
-      Object.keys(cache).forEach((key) => {
-        if ( cache[key] && cache[key].clear ) {
-          cache[key].clear();
-        }
-      });
-    }
-    else
-    {
-      this._state.cache = {};
-    }
-
-    var foundAll = this._state.foundAll;
-    if ( foundAll )
-    {
-      Object.keys(foundAll).forEach((key) => {
-        Ember.set(foundAll, key, false);
-      });
-    }
-    else
-    {
-      this._state.foundAll = {};
-    }
-
-    this._state.findQueue = {};
-    this.incrementProperty('generation');
-  },
-
-  resetType: function(type) {
-    type = normalizeType(type);
-    var group = this._group(type);
-    this._state.foundAll[type] = false;
-    group.clear();
-  },
-
-  // ---------
-
   // Get the cache group for [type]
-  _group: function(type) {
+  _group(type) {
     type = normalizeType(type);
     var cache = this._state.cache;
     var group = cache[type];
@@ -496,7 +503,7 @@ var Store = Ember.Service.extend({
   },
 
   // Add a record instance of [type] to cache
-  _add: function(type, obj) {
+  _add(type, obj) {
     type = normalizeType(type);
     var group = this._group(type);
     group.pushObject(obj);
@@ -513,17 +520,16 @@ var Store = Ember.Service.extend({
   //     (they will not be deserialzed into their correct type.)
   //   - wasAdded hooks are not called
   // Basically this is just for loading schemas faster.
-  _bulkAdd: function(type, pojos) {
-    var self = this;
+  _bulkAdd(type, pojos) {
     type = normalizeType(type);
     var group = this._group(type);
     var cls = getOwner(this).lookup('model:'+type);
-    group.pushObjects(pojos.map(function(input) {
+    group.pushObjects(pojos.map((input)=>  {
 
       // actions is very unhappy property name for Ember...
-      if ( self.replaceActions && typeof input.actions !== 'undefined')
+      if ( this.replaceActions && typeof input.actions !== 'undefined')
       {
-        input[self.replaceActions] = input.actions;
+        input[this.replaceActions] = input.actions;
         delete input.actions;
       }
 
@@ -533,13 +539,13 @@ var Store = Ember.Service.extend({
         input.id = normalizeType(input.id);
       }
 
-      input.store = self;
+      input.store = this;
       return cls.constructor.create(input);
     }));
   },
 
   // Remove a record of [type] from cache, given the id or the record instance.
-  _remove: function(type, obj) {
+  _remove(type, obj) {
     type = normalizeType(type);
     var group = this._group(type);
     group.removeObject(obj);
@@ -554,7 +560,7 @@ var Store = Ember.Service.extend({
   // It does a recursive descent so the deepest keys are processed first.
   // The value in the output for the key will be the value returned.
   // If no value is returned, the key will not be included in the output.
-  _typeify: function(key, input) {
+  _typeify(key, input) {
     if (  !input ||
           typeof input !== 'object' ||
           !input.type ||
@@ -600,7 +606,7 @@ var Store = Ember.Service.extend({
   },
 
   // Create a collection
-  createCollection: function(input, key='data') {
+  createCollection(input, key='data') {
     var cls = getOwner(this).lookup('model:collection');
     var output = cls.constructor.create({
       content: input[key],
@@ -613,7 +619,7 @@ var Store = Ember.Service.extend({
   },
 
   // Create a record, but do not insert into the cache
-  createRecord: function(data, type) {
+  createRecord(data, type) {
     type = normalizeType(type||data.type||'');
     var cls, schema;
 
