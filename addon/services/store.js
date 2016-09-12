@@ -3,19 +3,12 @@ import Serializable from '../mixins/serializable';
 import ApiError from '../models/error';
 import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
-<<<<<<< HEAD
-import { urlOptions } from './utils/url-options';
 import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from './utils/url-options';
-=======
-import { fetch } from 'ember-api-store/utils/fetch';
-import { urlOptions } from '../utils/url-options';
->>>>>>> v2/fastboot tweaks
 
 const { getOwner } = Ember;
 
-export const defaultMetaKeys = ['actions','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
-export const defaultSkipTypeifyKeys = [];
+export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
 
 var Store = Ember.Service.extend({
   cookie: Ember.inject.service(),
@@ -24,13 +17,14 @@ var Store = Ember.Service.extend({
   defaultPageSize: 1000,
   baseUrl: '/v1',
   metaKeys: null,
-  skipTypeifyKeys: null,
   replaceActions: 'actionLinks',
+  dropKeys: null,
   shoeboxName: 'ember-api-store',
   headers: null,
 
   arrayProxyClass: Ember.ArrayProxy,
   arrayProxyKey: 'content',
+  arrayProxyOptions: null,
 
   // true: automatically remove from store after a record.delete() succeeds.  You might want to disable this if your API has a multi-step deleted vs purged state.
   removeAfterDelete: true,
@@ -48,13 +42,10 @@ var Store = Ember.Service.extend({
       this.set('metaKeys', defaultMetaKeys.slice());
     }
 
-    if (!this.get('skipTypeifyKeys') )
-    {
-      this.set('skipTypeifyKeys', defaultSkipTypeifyKeys.slice());
-    }
-
     this._state = {
       cache: null,
+      cacheMap: null,
+      classCache: null,
       foundAll: null,
       findQueue: null,
     };
@@ -90,8 +81,8 @@ var Store = Ember.Service.extend({
   // Returns undefined if the record is not in cache, does not talk to API.
   getById(type, id) {
     type = normalizeType(type);
-    var group = this._group(type);
-    return group.filterBy('id',id)[0];
+    var group = this._groupMap(type);
+    return group[id];
   },
 
   // Synchronously returns whether record for [type] and [id] is in the local cache.
@@ -102,8 +93,8 @@ var Store = Ember.Service.extend({
   // Synchronously returns whether this exact record object is in the local cache
   hasRecord(obj) {
     var type = normalizeType(obj.get('type'));
-    var group = this._group(type);
-    return group.indexOf(obj) >= 0;
+    var group = this._groupMap(type);
+    return typeof group[id] !== 'undefined';
   },
 
   isCacheable(opt) {
@@ -138,12 +129,12 @@ var Store = Ember.Service.extend({
 
     // If this is a request for all of the items of [type], then we'll remember that and not ask again for a subsequent request
     var isCacheable = this.isCacheable(opt);
-    var isForAll = !id && isCacheable;
+    opt.isForAll = !id && isCacheable;
 
     // See if we already have this resource, unless forceReload is on.
     if ( opt.forceReload !== true )
     {
-      if ( isForAll && this._state.foundAll[type] )
+      if ( opt.isForAll && this._state.foundAll[type] )
       {
         return Ember.RSVP.resolve(this.all(type),'Cached find all '+type);
       }
@@ -177,11 +168,7 @@ var Store = Ember.Service.extend({
   all(type) {
     type = normalizeType(type);
     var group = this._group(type);
-    var proxy = this.arrayProxyClass.create({
-      [this.arrayProxyKey]: group
-    });
-
-    return proxy;
+    return this._createArrayProxy(group);
   },
 
   haveAll(type) {
@@ -223,7 +210,7 @@ var Store = Ember.Service.extend({
     return url;
   },
 
-  // Makes an AJAX request and returns a promise that resolves to an object with xhr, textStatus, and [err]
+  // Makes an AJAX request and returns a promise that resolves to an object
   // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
   rawRequest(opt) {
     opt.url = this.normalizeUrl(opt.url);
@@ -264,63 +251,16 @@ var Store = Ember.Service.extend({
     var self = this;
     opt.url = this.normalizeUrl(opt.url);
     opt.depaginate = opt.depaginate !== false;
-    var boundTypeify = this._typeify.bind(this);
 
     if ( this.mungeRequest ) {
       opt = this.mungeRequest(opt);
     }
 
-    var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-      self.rawRequest(opt).then(success,fail);
-
-      function success(obj) {
-        var xhr = obj.xhr;
-
-        if ( xhr.status === 204 )
-        {
-          resolve();
-        }
-        else if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
-        {
-          var response = JSON.parse(xhr.responseText, boundTypeify);
-
-          if ( opt.include && opt.include.length && response.forEach )
-          {
-            // Note which keys were included
-            response.forEach((obj) => {
-              obj.includedKeys = obj.includedKeys || [];
-              obj.includedKeys.pushObjects(opt.include.slice());
-              obj.includedKeys = obj.includedKeys.uniq();
-            });
-          }
-
-          Object.defineProperty(response, 'xhr', { value: obj.xhr, configurable: true, writable: true});
-          Object.defineProperty(response, 'textStatus', { value: obj.textStatus, configurable: true, writable: true});
-
-          if ( opt.depaginate && typeof response.depaginate === 'function' )
-          {
-            response.depaginate().then(function() {
-              resolve(response);
-            }).catch(fail);
-          }
-          else
-          {
-            resolve(response);
-          }
-        }
-        else
-        {
-          resolve(xhr.responseText);
-        }
-      }
-
-      function fail(obj) {
-        reject(self._requestFailed(obj,opt));
-      }
-
-    },'Request: '+ opt.url);
-
-    return promise;
+    return this.rawRequest(opt).then((xhr) => {
+      return this._requestSuccess(xhr,opt);
+    }).catch((xhr) => {
+      return this._requestFailed(xhr,opt);
+    });
   },
 
   // Forget about all the resources that hae been previously remembered.
@@ -351,7 +291,9 @@ var Store = Ember.Service.extend({
       this._state.foundAll = {};
     }
 
+    this._state.cacheMap = {};
     this._state.findQueue = {};
+    this._state.classCache = [];
     this.incrementProperty('generation');
   },
 
@@ -359,12 +301,26 @@ var Store = Ember.Service.extend({
     type = normalizeType(type);
     var group = this._group(type);
     this._state.foundAll[type] = false;
+    this._state.cacheMap[type] = {};
     group.clear();
   },
 
   // ---------
   // Below here be dragons
   // ---------
+  _createArrayProxy(content) {
+    let data = {
+      [this.arrayProxyKey]: content
+    };
+
+    let opt = this.get('arrayProxyOptions')||{};
+    Object.keys(opt).forEach((key) => {
+      data[key] = opt[key];
+    });
+
+    return this.arrayProxyClass.create(data);
+  },
+
   _headers(perRequest) {
     let out = {
       'accept': 'application/json',
@@ -406,7 +362,7 @@ var Store = Ember.Service.extend({
       opt.headers = newHeaders;
 
       later = this.request(opt).then((result) => {
-        if ( isForAll ) {
+        if ( opt.isForAll ) {
           this._state.foundAll[type] = true;
         }
 
@@ -442,19 +398,54 @@ var Store = Ember.Service.extend({
     delete queue[key];
   },
 
-  _requestFailed(obj,opt) {
-    var response, body;
-    var xhr = obj.xhr;
-    var err = obj.err;
-    var textStatus = obj.textStatus;
-
-    if ( (xhr.getResponseHeader('content-type')||'').toLowerCase().indexOf('/json') !== -1 )
+  _requestSuccess(xhr,opt) {
+    if ( xhr.status === 204 )
     {
-      body = JSON.parse(xhr.responseText, this._typeify.bind(this));
+      return;
     }
-    else if ( err )
+
+    if ( xhr.body && typeof xhr.body === 'object' )
     {
-      if ( err === 'timeout' )
+      let response = this._typeify(xhr.body);
+      delete xhr.body;
+      Object.defineProperty(response, 'xhr', {value: xhr});
+
+      // Note which keys were included in each object
+      if ( opt.include && opt.include.length && response.forEach )
+      {
+        response.forEach((obj) => {
+          obj.includedKeys = obj.includedKeys || [];
+          obj.includedKeys.pushObjects(opt.include.slice());
+          obj.includedKeys = obj.includedKeys.uniq();
+        });
+      }
+
+      // Depaginate
+      if ( opt.depaginate && typeof response.depaginate === 'function' )
+      {
+        return response.depaginate().then(function() {
+          return response;
+        }).catch((xhr) => {
+          return this._requestFailed(xhr,opt);
+        });
+      }
+      else
+      {
+        return response;
+      }
+    }
+    else
+    {
+      return xhr.body;
+    }
+  },
+
+  _requestFailed(xhr,opt) {
+    var response, body;
+
+    if ( xhr.err )
+    {
+      if ( xhr.err === 'timeout' )
       {
         body = {
           code: 'Timeout',
@@ -465,30 +456,34 @@ var Store = Ember.Service.extend({
       }
       else
       {
-        body = {status: xhr.status, message: err};
+        body = {status: xhr.status, message: xhr.err};
       }
+
+      return finish(body);
+    }
+    else if ( xhr.body && typeof xhr.body === 'object' )
+    {
+      return finish(this._typeify(xhr.body));
     }
     else
     {
-      body = {status: xhr.status, message: xhr.responseText};
+      body = {status: xhr.status, message: xhr.body};
+      return finish(body);
     }
 
-    if ( ApiError.detectInstance(body) )
-    {
-      response = body;
-    }
-    else
-    {
-      response = ApiError.create(body);
-    }
+    function finish(body) {
+      if ( !ApiError.detectInstance(body) )
+      {
+        body = ApiError.create(body);
+      }
 
-    Object.defineProperty(response, 'xhr', { value: xhr, configurable: true, writable: true});
-    Object.defineProperty(response, 'textStatus', { value: textStatus, configurable: true, writable: true});
-
-    return response;
+      delete xhr.body;
+      Object.defineProperty(body, 'xhr', {value: xhr});
+      return Ember.RSVP.reject(body);
+    }
   },
 
-  // Get the cache group for [type]
+  // Get the cache array group for [type]
   _group(type) {
     type = normalizeType(type);
     var cache = this._state.cache;
@@ -502,11 +497,27 @@ var Store = Ember.Service.extend({
     return group;
   },
 
+  // Get the cache map group for [type]
+  _groupMap(type) {
+    type = normalizeType(type);
+    var cache = this._state.cacheMap
+    var group = cache[type];
+    if ( !group )
+    {
+      group = {};
+      cache[type] = group;
+    }
+
+    return group;
+  },
+
   // Add a record instance of [type] to cache
   _add(type, obj) {
     type = normalizeType(type);
     var group = this._group(type);
+    var groupMap = this._groupMap(type);
     group.pushObject(obj);
+    groupMap[obj.id] = obj;
 
     if ( obj.wasAdded && typeof obj.wasAdded === 'function' )
     {
@@ -523,6 +534,7 @@ var Store = Ember.Service.extend({
   _bulkAdd(type, pojos) {
     type = normalizeType(type);
     var group = this._group(type);
+    var groupMap = this._groupMap(type);
     var cls = getOwner(this).lookup('model:'+type);
     group.pushObjects(pojos.map((input)=>  {
 
@@ -540,7 +552,9 @@ var Store = Ember.Service.extend({
       }
 
       input.store = this;
-      return cls.constructor.create(input);
+      let obj =  cls.constructor.create(input);
+      groupMap[obj.id] = obj;
+      return obj;
     }));
   },
 
@@ -548,7 +562,9 @@ var Store = Ember.Service.extend({
   _remove(type, obj) {
     type = normalizeType(type);
     var group = this._group(type);
+    var groupMap = this._groupMap(type);
     group.removeObject(obj);
+    delete groupMap[obj.id];
 
     if ( obj.wasRemoved && typeof obj.wasRemoved === 'function' )
     {
@@ -556,35 +572,23 @@ var Store = Ember.Service.extend({
     }
   },
 
-  // JSON.parse() will call this for every key and value when parsing a JSON document.
-  // It does a recursive descent so the deepest keys are processed first.
-  // The value in the output for the key will be the value returned.
-  // If no value is returned, the key will not be included in the output.
-  _typeify(key, input) {
-    if (  !input ||
-          typeof input !== 'object' ||
-          !input.type ||
-          Ember.isArray(input) ||
-          (!input.id && input.type !== 'collection') ||
-          typeof input.type !== 'string' || 
-          this.get('skipTypeifyKeys').indexOf(key) >= 0
-       )
+  _typeify(input) {
+    if ( !input || typeof input !== 'object' || !input.type )
     {
-      // Basic values can be returned unmodified
       return input;
     }
 
-    // Actual resorces should be added or updated in the store
-    // var output;
     var type = normalizeType(input.type);
-
     if ( type === 'collection')
     {
-      return this.createCollection(input)
+      return this.createCollection(input);
     }
-    else if ( type && input.id )
+    else if ( type )
     {
       var output = this.createRecord(input, type);
+      if ( !input.id ) {
+        return output;
+      }
 
       var cacheEntry = this.getById(type, output.id);
       if ( cacheEntry )
@@ -600,7 +604,6 @@ var Store = Ember.Service.extend({
     }
     else
     {
-      // This shouldn't happen...
       return input;
     }
   },
@@ -608,54 +611,76 @@ var Store = Ember.Service.extend({
   // Create a collection
   createCollection(input, key='data') {
     var cls = getOwner(this).lookup('model:collection');
-    var output = cls.constructor.create({
-      content: input[key],
-    });
+    var boundTypeify = this._typeify.bind(this);
+    var content = input[key].map(boundTypeify);
+    var output = cls.constructor.create({ content: content });
 
-    Object.defineProperty(output, 'store', { value: this, configurable: true});
+    Object.defineProperty(output, 'store', { value: this });
 
     output.setProperties(Ember.getProperties(input, this.get('metaKeys')));
     return output;
   },
 
+  getClassFor(type) {
+    let cls = this._state.classCache[type];
+    if ( cls ) {
+      return cls;
+    }
+
+    let owner = getOwner(this);
+    if ( type ) {
+      cls = owner.lookup('model:'+type);
+    }
+
+    if ( !cls ) {
+      cls = owner.lookup('model:resource');
+    }
+
+    this._state.classCache[type] = cls;
+    return cls;
+  },
+
   // Create a record, but do not insert into the cache
-  createRecord(data, type) {
+  createRecord(data, type, applyDefaults=false) {
     type = normalizeType(type||data.type||'');
-    var cls, schema;
 
-    if ( type )
-    {
-      cls = getOwner(this).lookup('model:'+type);
-      schema = this.getById('schema',type);
-    }
+    let cls = this.getClassFor(type);
 
-    if ( !cls )
-    {
-      cls = getOwner(this).lookup('model:resource');
-    }
-
-    var cons = cls.constructor;
-
-    var input;
-    if ( schema )
-    {
+    let schema = this.getById('schema',type);
+    let input = data;
+    if ( applyDefaults && schema ) {
       input = schema.getCreateDefaults(data);
-    }
-    else
-    {
-      input = data;
     }
 
     // actions is very unhappy property name for Ember...
-    if ( input.actions )
+    if ( this.replaceActions && typeof input.actions !== 'undefined')
     {
-      input.actionLinks = input.actions;
+      input[this.replaceActions] = input.actions;
       delete input.actions;
     }
 
+    let drop = this.dropKeys;
+    if ( drop )
+    {
+      for ( let i = drop.length-1 ; i >= 0 ; i-- ) {
+        delete input[drop[i]];
+      }
+    }
+
+    let cons = cls.constructor;
     if ( cons.mangleIn && typeof cons.mangleIn === 'function' )
     {
       input = cons.mangleIn(input,this);
+    }
+
+    if ( schema ) {
+      let fields = schema.get('typeifyFields');
+      for ( let i = fields.length-1 ; i >= 0 ; i-- ) {
+        let k = fields[i];
+        if ( input[k] ) {
+          input[k] = this._typeify(input[k]);
+        }
+      }
     }
 
     var output = cons.create(input);
@@ -663,7 +688,6 @@ var Store = Ember.Service.extend({
     Object.defineProperty(output, 'store', { value: this, configurable: true});
     return output;
   },
-
 });
 
 export default Store;

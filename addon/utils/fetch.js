@@ -12,30 +12,35 @@ export function fetch(url,opt) {
     delete opt.data;
   }
 
-  return _fetch(url, opt).then((res) => {
-    let out = null;
+  return _fetch(url, opt).then(done);
+}
 
-    let ct = res.headers.get("content-type");
-    if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
-      return res.json().then((data) => {
-        Object.defineProperty(data, '_fetch', {value: res});
-        if (res.ok) {
-          return data;
-        } else {
-          return Ember.RSVP.reject(data);
-        }
-      });
-    }
-    else {
-      Object.defineProperty(out, '_fetch', {value: res});
+function done(res) {
+  let ct = res.headers.get("content-type");
+  if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
+    return res.json().then(function(body) {
+      return respond(res,body);
+    });
+  } else {
+    return res.text().then(function(body) {
+      return respond(res,body);
+    });
+  }
+}
 
-      if (res.ok) {
-        return out;
-      } else {
-        return Ember.RSVP.reject(out);
-      }
-    }
-  });
+function respond(res, body) {
+  let out = {
+    body: body,
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers
+  }
+
+  if (res.ok) {
+    return out;
+  } else {
+    return Ember.RSVP.reject(out);
+  }
 }
 
 export default fetch;
