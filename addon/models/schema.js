@@ -24,7 +24,7 @@ var Schema = Resource.extend({
     let fields = this.get('resourceFields');
     let keys = Object.keys(fields);
 
-    return keys.filter(function(k) {
+    let out = keys.filter(function(k) {
       let parts = parseType(fields[k].type);
       for ( let i = 0 ; i < parts.length ; i++ ) {
         if ( SCHEMA.SIMPLE.contains(parts[i]) ) {
@@ -34,6 +34,10 @@ var Schema = Resource.extend({
 
       return true;
     });
+
+    out.addObjects(this.get('includeableLinks')||[]);
+
+    return out;
   }.property(),
 
   getCreateDefaults(more) {

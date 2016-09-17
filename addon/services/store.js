@@ -11,8 +11,6 @@ const { getOwner } = Ember;
 export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
 
 var Store = Ember.Service.extend({
-  cookie: Ember.inject.service(),
-
   defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
@@ -324,6 +322,7 @@ var Store = Ember.Service.extend({
   _headers(perRequest) {
     let out = {
       'accept': 'application/json',
+      'content-type': 'application/json',
     };
 
     applyHeaders(this.get('headers'), out);
@@ -406,9 +405,11 @@ var Store = Ember.Service.extend({
 
     if ( xhr.body && typeof xhr.body === 'object' )
     {
+      Ember.beginPropertyChanges();
       let response = this._typeify(xhr.body);
       delete xhr.body;
       Object.defineProperty(response, 'xhr', {value: xhr});
+      Ember.endPropertyChanges();
 
       // Note which keys were included in each object
       if ( opt.include && opt.include.length && response.forEach )
@@ -463,7 +464,10 @@ var Store = Ember.Service.extend({
     }
     else if ( xhr.body && typeof xhr.body === 'object' )
     {
-      return finish(this._typeify(xhr.body));
+      Ember.beginPropertyChanges();
+      let out = finish(this._typeify(xhr.body));
+      Ember.endPropertyChanges();
+      return out;
     }
     else
     {
@@ -573,8 +577,21 @@ var Store = Ember.Service.extend({
   },
 
   _typeify(input) {
-    if ( !input || typeof input !== 'object' || !input.type )
+    if ( !input || typeof input !== 'object')
     {
+      // Simple values can just be returned
+      return input;
+    }
+
+    if ( Ember.isArray(input) )
+    {
+      // Recurse over arrays
+      let boundTypeify = this._typeify.bind(this);
+      return input.map(boundTypeify);
+    }
+    else if ( !input.type )
+    {
+      // If it doesn't have a type then there's no sub-fields to typeify
       return input;
     }
 

@@ -21,5 +21,6 @@ export default function(serviceName='store', injectAs=null) {
 
     app.inject('controller', injectAs, 'service:'+serviceName);
     app.inject('route',      injectAs, 'service:'+serviceName);
+    app.inject('component',  injectAs, 'service:'+serviceName);
   };
 }
