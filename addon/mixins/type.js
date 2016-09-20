@@ -156,7 +156,7 @@ var Type = Ember.Mixin.create(Serializable,{
 
     opt = opt || {};
     opt.method = 'POST';
-    opt.url = url;
+    opt.url = opt.url || url;
     if ( data )
     {
       opt.data = data;
@@ -169,7 +169,7 @@ var Type = Ember.Mixin.create(Serializable,{
   save: function(opt) {
     var self = this;
     var store = this.get('store');
-
+    opt = opt || {};
 
     var method, url;
     var id = this.get('id');
@@ -177,8 +177,8 @@ var Type = Ember.Mixin.create(Serializable,{
     if ( id )
     {
       // Update
-      method = 'PUT';
-      url = this.linkFor('self');
+      opt.method = opt.method || 'PUT';
+      opt.url = opt.url || this.linkFor('self');
     }
     else
     {
@@ -188,8 +188,8 @@ var Type = Ember.Mixin.create(Serializable,{
         return Ember.RSVP.reject(new Error('Cannot create record without a type'));
       }
 
-      method = 'POST';
-      url = type;
+      opt.method = opt.method || 'POST';
+      opt.url = opt.url || type;
     }
 
     var json = this.serialize();
@@ -200,17 +200,6 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['links'];
     delete json['actions'];
     delete json['actionLinks'];
-
-    opt = opt || {};
-    if ( typeof opt.method === 'undefined' )
-    {
-      opt.method = method;
-    }
-
-    if ( typeof opt.url === 'undefined' )
-    {
-      opt.url = url;
-    }
 
     if ( typeof opt.data === 'undefined' )
     {
@@ -245,15 +234,16 @@ var Type = Ember.Mixin.create(Serializable,{
     });
   },
 
-  delete: function() {
+  delete: function(opt) {
     var self = this;
     var store = this.get('store');
     var type = this.get('type');
 
-    return this.request({
-      method: 'DELETE',
-      url: this.linkFor('self')
-    }).then(function(newData) {
+    opt = opt || {};
+    opt.method = 'DELETE';
+    opt.url = opt.url || this.linkFor('self');
+
+    return this.request(opt).then(function(newData) {
       if ( store.get('removeAfterDelete') )
       {
         store._remove(type, self);
