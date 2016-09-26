@@ -576,18 +576,22 @@ var Store = Ember.Service.extend({
     }
   },
 
-  _typeify(input) {
+  // Turn a POJO into a Model: {updateStore: true}
+  _typeify(input, opt=null) {
     if ( !input || typeof input !== 'object')
     {
       // Simple values can just be returned
       return input;
     }
 
+    if ( !opt ) {
+      opt = {};
+    }
+
     if ( Ember.isArray(input) )
     {
       // Recurse over arrays
-      let boundTypeify = this._typeify.bind(this);
-      return input.map(boundTypeify);
+      return input.map(x => this._typeify(x, opt));
     }
     else if ( !input.type )
     {
@@ -598,12 +602,12 @@ var Store = Ember.Service.extend({
     var type = normalizeType(input.type);
     if ( type === 'collection')
     {
-      return this.createCollection(input);
+      return this.createCollection(input, opt);
     }
     else if ( type )
     {
-      var output = this.createRecord(input, type);
-      if ( !input.id ) {
+      var output = this.createRecord(input, opt);
+      if ( !input.id || opt.updateStore === false ) {
         return output;
       }
 
@@ -625,12 +629,13 @@ var Store = Ember.Service.extend({
     }
   },
 
-  // Create a collection
-  createCollection(input, key='data') {
+  // Create a collection: {key: 'data'}
+  createCollection(input, opt) {
     Ember.beginPropertyChanges();
+    let key = (opt && opt.key ? opt.key : 'data');
     var cls = getOwner(this).lookup('model:collection');
     var boundTypeify = this._typeify.bind(this);
-    var content = input[key].map(boundTypeify);
+    var content = input[key].map(x => this._typeify(x, opt));
     var output = cls.constructor.create({ content: content });
 
     Object.defineProperty(output, 'store', { value: this });
@@ -659,15 +664,19 @@ var Store = Ember.Service.extend({
     return cls;
   },
 
-  // Create a record, but do not insert into the cache
-  createRecord(data, type, applyDefaults=false) {
-    type = normalizeType(type||data.type||'');
+  // Create a record: {applyDefaults: false}
+  createRecord(data, opt) {
+    opt = opt || {};
+    let type = normalizeType(opt.type||data.type||'');
 
-    let cls = this.getClassFor(type);
+    let cls;
+    if ( type ) {
+      cls = this.getClassFor(type);
+    }
 
     let schema = this.getById('schema',type);
     let input = data;
-    if ( applyDefaults && schema ) {
+    if ( opt.applyDefaults && schema ) {
       input = schema.getCreateDefaults(data);
     }
 
@@ -697,7 +706,7 @@ var Store = Ember.Service.extend({
       for ( let i = fields.length-1 ; i >= 0 ; i-- ) {
         let k = fields[i];
         if ( input[k] ) {
-          input[k] = this._typeify(input[k]);
+          input[k] = this._typeify(input[k], opt);
         }
       }
     }

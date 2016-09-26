@@ -56,11 +56,8 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   clone: function() {
-    var store = this.get('store');
-    var output = JSON.parse(JSON.stringify(this.serialize()), function(key, input) {
-      return store._createObject(input);
-    });
-    //var output = this.constructor.create(this.serialize());
+    let store = this.get('store');
+    let output = store.createRecord(JSON.parse(JSON.stringify(this.serialize())), {updateStore: false});
     //output.set('store', this.get('store'));
     return output;
   },
