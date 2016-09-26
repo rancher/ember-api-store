@@ -627,6 +627,7 @@ var Store = Ember.Service.extend({
 
   // Create a collection
   createCollection(input, key='data') {
+    Ember.beginPropertyChanges();
     var cls = getOwner(this).lookup('model:collection');
     var boundTypeify = this._typeify.bind(this);
     var content = input[key].map(boundTypeify);
@@ -635,6 +636,7 @@ var Store = Ember.Service.extend({
     Object.defineProperty(output, 'store', { value: this });
 
     output.setProperties(Ember.getProperties(input, this.get('metaKeys')));
+    Ember.endPropertyChanges();
     return output;
   },
 
