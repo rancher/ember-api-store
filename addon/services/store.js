@@ -92,7 +92,7 @@ var Store = Ember.Service.extend({
   hasRecord(obj) {
     var type = normalizeType(obj.get('type'));
     var group = this._groupMap(type);
-    return typeof group[id] !== 'undefined';
+    return typeof group[obj.get('id')] === obj;
   },
 
   isCacheable(opt) {
@@ -246,7 +246,6 @@ var Store = Ember.Service.extend({
 
   // Makes an AJAX request that resolves to a resource model
   request(opt) {
-    var self = this;
     opt.url = this.normalizeUrl(opt.url);
     opt.depaginate = opt.depaginate !== false;
 
@@ -408,7 +407,7 @@ var Store = Ember.Service.extend({
       Ember.beginPropertyChanges();
       let response = this._typeify(xhr.body);
       delete xhr.body;
-      Object.defineProperty(response, 'xhr', {value: xhr});
+      Object.defineProperty(response, 'xhr', {value: xhr, configurable: true});
       Ember.endPropertyChanges();
 
       // Note which keys were included in each object
@@ -442,7 +441,7 @@ var Store = Ember.Service.extend({
   },
 
   _requestFailed(xhr,opt) {
-    var response, body;
+    var body;
 
     if ( xhr.err )
     {
@@ -482,7 +481,7 @@ var Store = Ember.Service.extend({
       }
 
       delete xhr.body;
-      Object.defineProperty(body, 'xhr', {value: xhr});
+      Object.defineProperty(body, 'xhr', {value: xhr, configurable: true});
       return Ember.RSVP.reject(body);
     }
   },
@@ -504,7 +503,7 @@ var Store = Ember.Service.extend({
   // Get the cache map group for [type]
   _groupMap(type) {
     type = normalizeType(type);
-    var cache = this._state.cacheMap
+    var cache = this._state.cacheMap;
     var group = cache[type];
     if ( !group )
     {
@@ -634,11 +633,10 @@ var Store = Ember.Service.extend({
     Ember.beginPropertyChanges();
     let key = (opt && opt.key ? opt.key : 'data');
     var cls = getOwner(this).lookup('model:collection');
-    var boundTypeify = this._typeify.bind(this);
     var content = input[key].map(x => this._typeify(x, opt));
     var output = cls.constructor.create({ content: content });
 
-    Object.defineProperty(output, 'store', { value: this });
+    Object.defineProperty(output, 'store', { value: this, configurable: true });
 
     output.setProperties(Ember.getProperties(input, this.get('metaKeys')));
     Ember.endPropertyChanges();

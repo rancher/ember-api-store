@@ -34,7 +34,7 @@ function respond(res, body) {
     status: res.status,
     statusText: res.statusText,
     headers: res.headers
-  }
+  };
 
   if (res.ok) {
     return out;

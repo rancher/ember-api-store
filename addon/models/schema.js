@@ -27,8 +27,8 @@ var Schema = Resource.extend({
     let out = keys.filter(function(k) {
       let parts = parseType(fields[k].type);
       for ( let i = 0 ; i < parts.length ; i++ ) {
-        if ( SCHEMA.SIMPLE.contains(parts[i]) ) {
-          return false
+        if ( SCHEMA.SIMPLE.includes(parts[i]) ) {
+          return false;
         }
       }
 

@@ -1,3 +1,4 @@
+import Ember from 'ember';
 import VERSION from 'ember-api-store/version';
 
 const EmberApiStore = Ember.Namespace.create({
