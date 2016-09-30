@@ -90,9 +90,13 @@ var Store = Ember.Service.extend({
 
   // Synchronously returns whether this exact record object is in the local cache
   hasRecord(obj) {
+    if ( !obj ) {
+      return false;
+    }
+
     var type = normalizeType(obj.get('type'));
     var group = this._groupMap(type);
-    return typeof group[obj.get('id')] === obj;
+    return group[obj.get('id')] === obj;
   },
 
   isCacheable(opt) {
@@ -683,14 +687,6 @@ var Store = Ember.Service.extend({
     {
       input[this.replaceActions] = input.actions;
       delete input.actions;
-    }
-
-    let drop = this.dropKeys;
-    if ( drop )
-    {
-      for ( let i = drop.length-1 ; i >= 0 ; i-- ) {
-        delete input[drop[i]];
-      }
     }
 
     let cons = cls.constructor;
