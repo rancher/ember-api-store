@@ -584,7 +584,7 @@ var Store = Ember.Service.extend({
     }
 
     if ( !opt ) {
-      opt = {};
+      opt = {applyDefaults: false};
     }
 
     if ( Ember.isArray(input) )
@@ -674,7 +674,7 @@ var Store = Ember.Service.extend({
 
     let schema = this.getById('schema',type);
     let input = data;
-    if ( opt.applyDefaults && schema ) {
+    if ( opt.applyDefaults !== false && schema ) {
       input = schema.getCreateDefaults(data);
     }
 
