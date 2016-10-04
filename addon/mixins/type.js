@@ -1,7 +1,6 @@
 import Ember from 'ember';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
-import { urlOptions } from '../utils/url-options';
 import { copyHeaders } from '../utils/apply-headers';
 import { urlOptions } from '../utils/url-options';
 
@@ -169,7 +168,6 @@ var Type = Ember.Mixin.create(Serializable,{
     var store = this.get('store');
     opt = opt || {};
 
-    var method, url;
     var id = this.get('id');
     var type = normalizeType(this.get('type'));
     if ( id )
