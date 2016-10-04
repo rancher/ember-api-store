@@ -1,3 +1,5 @@
+import Ember from 'ember';
+
 export function urlOptions(url,opt,cls) {
   opt = opt || {};
 
@@ -21,7 +23,7 @@ export function urlOptions(url,opt,cls) {
   // End: Filter
 
   // Include
-  let include = []
+  let include = [];
   if ( opt.include )
   {
     if ( Ember.isArray(opt.include) )
@@ -46,7 +48,7 @@ export function urlOptions(url,opt,cls) {
 
 
   // Limit
-  let limit = opt.limit
+  let limit = opt.limit;
   if ( !limit && cls ) {
     limit = cls.constructor.defaultLimit;
   }
@@ -83,6 +85,6 @@ export function urlOptions(url,opt,cls) {
   // End: Sort
 
   return url;
-};
+}
 
 export default urlOptions;

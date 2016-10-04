@@ -1,8 +1,8 @@
 import Ember from 'ember';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
-import { urlOptions } from '../utils/url-options';
 import { copyHeaders } from '../utils/apply-headers';
+import { urlOptions } from '../utils/url-options';
 
 var Type = Ember.Mixin.create(Serializable,{
   id: null,
@@ -55,11 +55,8 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   clone: function() {
-    var store = this.get('store');
-    var output = JSON.parse(JSON.stringify(this.serialize()), function(key, input) {
-      return store._createObject(input);
-    });
-    //var output = this.constructor.create(this.serialize());
+    let store = this.get('store');
+    let output = store.createRecord(JSON.parse(JSON.stringify(this.serialize())), {updateStore: false});
     //output.set('store', this.get('store'));
     return output;
   },
@@ -171,7 +168,6 @@ var Type = Ember.Mixin.create(Serializable,{
     var store = this.get('store');
     opt = opt || {};
 
-    var method, url;
     var id = this.get('id');
     var type = normalizeType(this.get('type'));
     if ( id )
