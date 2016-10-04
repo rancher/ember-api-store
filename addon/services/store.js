@@ -4,7 +4,7 @@ import ApiError from '../models/error';
 import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
 import fetch from 'ember-api-store/utils/fetch';
-import { urlOptions } from './utils/url-options';
+import { urlOptions } from '../utils/url-options';
 
 const { getOwner } = Ember;
 
