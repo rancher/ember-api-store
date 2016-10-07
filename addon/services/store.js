@@ -591,18 +591,19 @@ var Store = Ember.Service.extend({
       opt = {applyDefaults: false};
     }
 
+    let type = Ember.get(input,'type');
     if ( Ember.isArray(input) )
     {
       // Recurse over arrays
       return input.map(x => this._typeify(x, opt));
     }
-    else if ( !input.type )
+    else if ( !type )
     {
       // If it doesn't have a type then there's no sub-fields to typeify
       return input;
     }
 
-    var type = normalizeType(input.type);
+    type = normalizeType(type);
     if ( type === 'collection')
     {
       return this.createCollection(input, opt);
@@ -669,7 +670,7 @@ var Store = Ember.Service.extend({
   // Create a record: {applyDefaults: false}
   createRecord(data, opt) {
     opt = opt || {};
-    let type = normalizeType(opt.type||data.type||'');
+    let type = normalizeType(Ember.get(opt,'type')||Ember.get(data,'type')||'');
 
     let cls;
     if ( type ) {
