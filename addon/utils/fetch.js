@@ -17,7 +17,9 @@ export function fetch(url,opt) {
 
 function done(res) {
   let ct = res.headers.get("content-type");
-  if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
+  if ( res.status === 204 ) {
+    return respond(res);
+  } else  if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
     return res.json().then(function(body) {
       return respond(res,body);
     });
