@@ -65,6 +65,15 @@ var Schema = Resource.extend({
     }
 
     return out;
+  },
+
+  optionsFor(field) {
+    let obj = this.get('resourceFields')[field];
+    if ( obj && obj.options ) {
+      return (obj.options||[]).slice();
+    }
+
+    return [];
   }
 });
 
