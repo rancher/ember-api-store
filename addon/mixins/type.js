@@ -223,6 +223,23 @@ var Type = Ember.Mixin.create(Serializable,{
           store._remove(type, existing);
         }
         store._add(type, self);
+
+        // And also for the base type
+        var baseType = self.get('baseType');
+        if ( baseType )
+        {
+          baseType = normalizeType(baseType);
+          if ( baseType !== type )
+          {
+            existing = store.getById(baseType,newId);
+            if ( existing )
+            {
+              store._remove(baseType, existing);
+            }
+            store._add(baseType, self);
+          }
+        }
+
         Ember.endPropertyChanges();
       }
 

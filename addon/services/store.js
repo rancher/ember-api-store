@@ -659,10 +659,10 @@ var Store = Ember.Service.extend({
     }
 
     if ( type && !this.neverMissing.includes(type) ) {
-      this._notifyMissing(type, rec.id);
+      Ember.run.next(this,'_notifyMissing', type, rec.id);
 
       if ( baseType && !this.neverMissing.includes(type) ) {
-        this._notifyMissing(baseType, rec.id);
+        Ember.run.next(this,'_notifyMissing', baseType, rec.id);
       }
     }
 
