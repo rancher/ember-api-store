@@ -9,12 +9,14 @@ import { urlOptions } from '../utils/url-options';
 const { getOwner } = Ember;
 
 export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
+export const neverMissing = ['error'];
 
 var Store = Ember.Service.extend({
   defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
   metaKeys: null,
+  neverMissing: null,
   replaceActions: 'actionLinks',
   dropKeys: null,
   shoeboxName: 'ember-api-store',
@@ -40,12 +42,18 @@ var Store = Ember.Service.extend({
       this.set('metaKeys', defaultMetaKeys.slice());
     }
 
+    if (!this.get('neverMissing') )
+    {
+      this.set('neverMissing', neverMissing.slice());
+    }
+
     this._state = {
       cache: null,
       cacheMap: null,
       classCache: null,
       foundAll: null,
       findQueue: null,
+      missingMap: null,
     };
 
     let fastboot = this.get('fastboot');
@@ -295,6 +303,7 @@ var Store = Ember.Service.extend({
     this._state.cacheMap = {};
     this._state.findQueue = {};
     this._state.classCache = [];
+    this._state.missingMap = {};
     this.incrementProperty('generation');
   },
 
@@ -592,6 +601,7 @@ var Store = Ember.Service.extend({
     }
 
     let type = Ember.get(input,'type');
+    let baseType = Ember.get(input,'baseType');
     if ( Ember.isArray(input) )
     {
       // Recurse over arrays
@@ -604,33 +614,59 @@ var Store = Ember.Service.extend({
     }
 
     type = normalizeType(type);
+    if ( baseType ) {
+      baseType = normalizeType(baseType);
+
+      // Only use baseType if it's different from type
+      if ( baseType === type ) {
+        baseType = null;
+      }
+    }
+
     if ( type === 'collection')
     {
       return this.createCollection(input, opt);
     }
-    else if ( type )
-    {
-      var output = this.createRecord(input, opt);
-      if ( !input.id || opt.updateStore === false ) {
-        return output;
-      }
-
-      var cacheEntry = this.getById(type, output.id);
-      if ( cacheEntry )
-      {
-        cacheEntry.replaceWith(output);
-        return cacheEntry;
-      }
-      else
-      {
-        this._add(type, output);
-        return output;
-      }
-    }
-    else
+    else if ( !type )
     {
       return input;
     }
+
+    let rec = this.createRecord(input, opt);
+    if ( !input.id || opt.updateStore === false ) {
+      return rec;
+    }
+
+    let out = rec;
+
+    let cacheEntry = this.getById(type, rec.id);
+    let baseCacheEntry;
+    if ( baseType ) {
+      baseCacheEntry = this.getById(baseType, rec.id);
+    }
+
+    if ( cacheEntry )
+    {
+      cacheEntry.replaceWith(rec);
+      out = cacheEntry;
+    }
+    else
+    {
+      this._add(type, rec);
+      if ( baseType ) {
+        this._add(baseType, rec);
+      }
+    }
+
+    if ( type && !this.neverMissing.includes(type) ) {
+      this._notifyMissing(type, rec.id);
+
+      if ( baseType && !this.neverMissing.includes(type) ) {
+        this._notifyMissing(baseType, rec.id);
+      }
+    }
+
+    return out;
   },
 
   // Create a collection: {key: 'data'}
@@ -710,6 +746,48 @@ var Store = Ember.Service.extend({
 
     Object.defineProperty(output, 'store', { value: this, configurable: true});
     return output;
+  },
+
+  // Handle missing records in denormalized arrays
+  // Get the cache map missing for [type]
+  _missingMap(type) {
+    type = normalizeType(type);
+    let cache = this._state.missingMap;
+    let group = cache[type];
+    if ( !group )
+    {
+      group = {};
+      cache[type] = group;
+    }
+
+    return group;
+  },
+
+  _missing(type, id, dependent, key) {
+    type = normalizeType(type);
+    let missingMap = this._missingMap(type);
+    let entries = missingMap[id];
+    if ( !entries ) {
+      entries = [];
+      missingMap[id] = entries;
+    }
+
+    //console.log('Missing', type, id, 'for', key, 'in', dependent);
+    entries.push({o: dependent, k: key});
+  },
+
+  _notifyMissing(type,id) {
+    let missingMap = this._missingMap(type);
+    let entries = missingMap[id];
+    //console.log('Notify missing',type,id, entries);
+    if ( entries ) {
+      entries.forEach((entry) => {
+        //console.log('Recomputing', entry.k, 'for', type, id, 'in', entry.o);
+        entry.o.notifyPropertyChange(entry.k);
+      });
+
+      entries.clear();
+    }
   },
 });
 
