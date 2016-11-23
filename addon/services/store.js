@@ -601,7 +601,6 @@ var Store = Ember.Service.extend({
     }
 
     let type = Ember.get(input,'type');
-    let baseType = Ember.get(input,'baseType');
     if ( Ember.isArray(input) )
     {
       // Recurse over arrays
@@ -614,15 +613,6 @@ var Store = Ember.Service.extend({
     }
 
     type = normalizeType(type);
-    if ( baseType ) {
-      baseType = normalizeType(baseType);
-
-      // Only use baseType if it's different from type
-      if ( baseType === type ) {
-        baseType = null;
-      }
-    }
-
     if ( type === 'collection')
     {
       return this.createCollection(input, opt);
@@ -637,8 +627,19 @@ var Store = Ember.Service.extend({
       return rec;
     }
 
-    let out = rec;
+    // This must be after createRecord so that mangleIn() can change the baseType
+    let baseType = rec.get('baseType');
+    if ( baseType ) {
+      baseType = normalizeType(baseType);
 
+      // Only use baseType if it's different from type
+      if ( baseType === type ) {
+        baseType = null;
+      }
+    }
+
+
+    let out = rec;
     let cacheEntry = this.getById(type, rec.id);
     let baseCacheEntry;
     if ( baseType ) {
