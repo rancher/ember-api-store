@@ -187,16 +187,17 @@ var Store = Ember.Service.extend({
   },
 
   // find(type) && return all(type)
-  findAll(type) {
+  findAll(type, opt) {
     type = normalizeType(type);
+    opt = opt || {};
 
-    if ( this.haveAll(type) )
+    if ( this.haveAll(type) && opt.forceReload !== true )
     {
       return Ember.RSVP.resolve(this.all(type),'All '+ type + ' already cached');
     }
     else
     {
-      return this.find(type).then(() => {
+      return this.find(type, undefined, opt).then(() => {
         return this.all(type);
       });
     }
