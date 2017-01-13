@@ -257,7 +257,7 @@ var Type = Ember.Mixin.create(Serializable,{
     opt.url = opt.url || this.linkFor('self');
 
     return this.request(opt).then(function(newData) {
-      if ( store.get('removeAfterDelete') )
+      if ( store.get('removeAfterDelete') || opt.forceRemove )
       {
         store._remove(type, self);
       }
