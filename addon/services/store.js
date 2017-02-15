@@ -376,6 +376,20 @@ var Store = Ember.Service.extend({
       later = this.request(opt).then((result) => {
         if ( opt.isForAll ) {
           this._state.foundAll[type] = true;
+
+          if ( opt.removeMissing && result.type === 'collection') {
+            let all = this._group(type);
+            let toRemove = [];
+            all.forEach((obj) => {
+              if ( !result.includes(obj) ) {
+                toRemove.push(obj);
+              }
+            });
+
+            toRemove.forEach((obj) => {
+              this._remove(type, obj);
+            });
+          }
         }
 
         this._finishFind(queueKey, result, 'resolve');
@@ -393,15 +407,15 @@ var Store = Ember.Service.extend({
 
   },
 
-  _finishFind(key, result, type) {
+  _finishFind(key, result, action) {
     var queue = this._state.findQueue;
     var promises = queue[key];
 
     if (promises) {
       while (promises.length) {
-        if (type === 'resolve') {
+        if (action === 'resolve') {
           promises.pop().resolve(result);
-        } else if (type === 'reject') {
+        } else if (action === 'reject') {
           promises.pop().reject(result);
         }
       }
