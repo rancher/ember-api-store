@@ -79,19 +79,7 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
         //console.log('Depaginate, got page');
         self.set('pagination', body.get('pagination'));
         body.forEach(function(obj) {
-          var existing = self.findById(obj.get('id'));
-          if ( existing )
-          {
-            // This is an addition to a partial object we got on a previous page
-            //console.log('Depaginate, merging into', obj.get('id'));
-            existing.merge(obj,true);
-          }
-          else
-          {
-            //console.log('Depaginate, pushing new object');
-            // This is a new object we don't have already.
-            self.pushObject(obj);
-          }
+          self.pushObject(obj);
         });
 
         if ( self.get('pagination.next') )
@@ -116,26 +104,4 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
 
     return promise;
   },
-
-  findById: function(id) {
-    var matches = this.filterBy('id',id);
-    return matches[0];
-  },
-
-  findNestedById: function(key, id) {
-    var out = null;
-    this.forEach(function(item) {
-      var subItems = item.get(key);
-      if ( subItems && subItems.get('length') )
-      {
-        var matches = subItems.filterBy('id', id);
-        if ( matches.length )
-        {
-          out = matches.objectAt(0);
-        }
-      }
-    });
-
-    return out;
-  }
 });
