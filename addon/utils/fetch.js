@@ -1,4 +1,4 @@
-import _fetch from "ember-network/fetch";
+import _fetch from "fetch";
 import Ember from 'ember';
 
 export function fetch(url,opt) {

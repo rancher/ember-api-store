@@ -656,6 +656,7 @@ var Store = Ember.Service.extend({
 
     let out = rec;
     let cacheEntry = this.getById(type, rec.id);
+    // eslint-disable-next-line
     let baseCacheEntry;
     if ( baseType ) {
       baseCacheEntry = this.getById(baseType, rec.id);
@@ -759,6 +760,7 @@ var Store = Ember.Service.extend({
     }
 
     var output = cons.create(input);
+    Ember.setOwner(output, getOwner(this));
 
     Object.defineProperty(output, 'store', { value: this, configurable: true});
     return output;
