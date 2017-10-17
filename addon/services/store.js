@@ -8,6 +8,13 @@ import { urlOptions } from '../utils/url-options';
 
 const { getOwner } = Ember;
 
+function getOwnerKey() {
+  const x = {};
+  Ember.setOwner(x);
+  return Object.keys(x)[0];
+}
+const ownerKey = getOwnerKey();
+
 export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
 export const neverMissing = ['error'];
 
@@ -656,6 +663,7 @@ var Store = Ember.Service.extend({
 
     let out = rec;
     let cacheEntry = this.getById(type, rec.id);
+    // eslint-disable-next-line
     let baseCacheEntry;
     if ( baseType ) {
       baseCacheEntry = this.getById(baseType, rec.id);
@@ -757,10 +765,10 @@ var Store = Ember.Service.extend({
         }
       }
     }
-
     var output = cons.create(input);
+    Object.defineProperty(output, ownerKey, {enumerable: false, value: Ember.getOwner(this)})
 
-    Object.defineProperty(output, 'store', { value: this, configurable: true});
+    Object.defineProperty(output, 'store', {enumerable: false, value: this, configurable: true});
     return output;
   },
 
