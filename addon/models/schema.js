@@ -2,7 +2,7 @@ import Resource from './resource';
 import { normalizeType } from '../utils/normalize';
 
 export const SCHEMA = {
-  SIMPLE: ['string','password','multiline','float','int','date','blob','boolean','enum','reference','json'],
+  SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json'],
 //  NESTED: ['array','map'],
 };
 
@@ -52,7 +52,7 @@ var Schema = Resource.extend({
       {
         if ( typeof def !== 'undefined' )
         {
-          out[key] = def;
+          out[key] = JSON.parse(JSON.stringify(def));
         }
       }
     });
@@ -74,7 +74,49 @@ var Schema = Resource.extend({
     }
 
     return [];
-  }
+  },
+
+  typesFor(fieldName) {
+    const field = this.get('resourceFields')[fieldName];
+    if ( !field || !field.type ) {
+      return [];
+    }
+
+    return field.type.replace(/\]/g,'').split('[');
+  },
+
+  primaryTypeFor(field) {
+    const types = this.typesFor(field);
+    if ( types ) {
+      return types[0];
+    }
+  },
+
+  subTypeFor(field) {
+    const types = this.typesFor(field);
+
+    if ( types.length < 2 ) {
+      return null;
+    } else if ( types.length === 2 ) {
+      return types[1];
+    } else {
+      let out = types[types.length-1];
+      for ( let i = types.length - 2 ; i >= 1 ; i-- ) {
+        out = types[i] + '[' + out + ']';
+      }
+      return out;
+    }
+  },
+
+  referencedTypeFor(field) {
+    const obj = this.get('resourceFields')[field];
+    const type = obj.type;
+    const match = type.match(/^reference\[([^\]]*)\]$/);
+
+    if ( match ) {
+      return match[1];
+    }
+  },
 });
 
 Schema.reopenClass({

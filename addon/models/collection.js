@@ -14,6 +14,8 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
   sort: null,
   sortLinks: null,
 
+  reservedKeys: ['content'],
+
   toString: function() {
     return 'collection:'+ this.get('resourceType') + '[' + this.get('length') + ']';
   },
