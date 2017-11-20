@@ -1,5 +1,5 @@
 function normalizeType(type) {
-  return type.toLowerCase();
+  return (type||'').toLowerCase();
 }
 
 export { normalizeType };

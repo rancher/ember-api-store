@@ -175,8 +175,14 @@ var Store = Ember.Service.extend({
     {
       // Otherwise lookup the schema for the type and generate the URL based on it.
       return this.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then((schema) => {
-        var url = schema.linkFor('collection') + (id ? '/'+encodeURIComponent(id) : '');
-        return this._findWithUrl(url, type, opt);
+        if ( schema ) {
+          var url = schema.linkFor('collection') + (id ? '/'+encodeURIComponent(id) : '');
+          if ( url ) {
+            return this._findWithUrl(url, type, opt);
+          }
+        }
+
+        return Ember.RSVP.reject('Unable to find schema for "' + type + '"');
       });
     }
   },
