@@ -21,7 +21,7 @@ var Schema = Resource.extend({
       return [];
     }
 
-    let fields = this.get('resourceFields');
+    let fields = this.get('resourceFields')||{};
     let keys = Object.keys(fields);
 
     let out = keys.filter(function(k) {

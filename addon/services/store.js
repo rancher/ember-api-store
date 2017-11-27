@@ -16,14 +16,12 @@ function getOwnerKey() {
 const ownerKey = getOwnerKey();
 
 export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
-export const neverMissing = ['error'];
 
 var Store = Ember.Service.extend({
   defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
   metaKeys: null,
-  neverMissing: null,
   replaceActions: 'actionLinks',
   dropKeys: null,
   shoeboxName: 'ember-api-store',
@@ -49,18 +47,15 @@ var Store = Ember.Service.extend({
       this.set('metaKeys', defaultMetaKeys.slice());
     }
 
-    if (!this.get('neverMissing') )
-    {
-      this.set('neverMissing', neverMissing.slice());
-    }
-
     this._state = {
       cache: null,
       cacheMap: null,
       classCache: null,
       foundAll: null,
       findQueue: null,
-      missingMap: null,
+      watchHasMany: null,
+      watchReference: null,
+      missingReference: null,
     };
 
     let fastboot = this.get('fastboot');
@@ -141,7 +136,7 @@ var Store = Ember.Service.extend({
 
     if ( !type )
     {
-      return Ember.RSVP.reject(new ApiError('type not specified'));
+      return Ember.RSVP.reject(ApiError.create({detail: 'type not specified'}));
     }
 
     // If this is a request for all of the items of [type], then we'll remember that and not ask again for a subsequent request
@@ -182,7 +177,7 @@ var Store = Ember.Service.extend({
           }
         }
 
-        return Ember.RSVP.reject('Unable to find schema for "' + type + '"');
+        return Ember.RSVP.reject(ApiError.create({detail: 'Unable to find schema for "' + type + '"'}));
       });
     }
   },
@@ -317,7 +312,9 @@ var Store = Ember.Service.extend({
     this._state.cacheMap = {};
     this._state.findQueue = {};
     this._state.classCache = [];
-    this._state.missingMap = {};
+    this._state.watchHasMany = {};
+    this._state.watchReference = {};
+    this._state.missingReference = {};
     this.incrementProperty('generation');
   },
 
@@ -558,13 +555,35 @@ var Store = Ember.Service.extend({
   // Add a record instance of [type] to cache
   _add(type, obj) {
     type = normalizeType(type);
-    var group = this._group(type);
-    var groupMap = this._groupMap(type);
+    const id = obj.id;
+    const group = this._group(type);
+    const groupMap = this._groupMap(type);
+
     group.pushObject(obj);
     groupMap[obj.id] = obj;
 
-    if ( obj.wasAdded && typeof obj.wasAdded === 'function' )
-    {
+    // Update hasMany relationships
+    const watches = this._state.watchHasMany[type]||[];
+    const notify = [];
+
+    let watch, val;
+    for ( let i = 0 ; i < watches.length ; i++ ) {
+      watch = watches[i];
+      val = rec.get(watch.targetField);
+      notify.push({type: watch.thisType, id: val, field: watch.thisField});
+    }
+
+    // Update references relationships that have been looking for this resource
+    const key = type+':'+id;
+    const missings = this._state.missingReference[key];
+    if ( missings ) {
+      notify.pushObjects(missings);
+      delete this._state.missingReference[key];
+    }
+
+    this.notifyFieldsChanged(notify);
+
+    if ( obj.wasAdded && typeof obj.wasAdded === 'function' ) {
       obj.wasAdded();
     }
   },
@@ -572,7 +591,7 @@ var Store = Ember.Service.extend({
   // Add a lot of instances of the same type quickly.
   //   - There must be a model for the type already defined.
   //   - Instances cannot contain any nested other types (e.g. include or subtypes),
-  //     (they will not be deserialzed into their correct type.)
+  //     (they will not be deserialized into their correct type.)
   //   - wasAdded hooks are not called
   // Basically this is just for loading schemas faster.
   _bulkAdd(type, pojos) {
@@ -605,13 +624,37 @@ var Store = Ember.Service.extend({
   // Remove a record of [type] from cache, given the id or the record instance.
   _remove(type, obj) {
     type = normalizeType(type);
-    var group = this._group(type);
-    var groupMap = this._groupMap(type);
-    group.removeObject(obj);
-    delete groupMap[obj.id];
+    const id = obj.id;
+    const group = this._group(type);
+    const groupMap = this._groupMap(type);
 
-    if ( obj.wasRemoved && typeof obj.wasRemoved === 'function' )
-    {
+    group.removeObject(obj);
+    delete groupMap[id];
+
+    // Update hasMany relationships that refer to this resource
+    const watches = this._state.watchHasMany[type]||[];
+    const notify = [];
+    let watch, val;
+    for ( let i = 0 ; i < watches.length ; i++ ) {
+      watch = watches[i];
+      notify.push({
+        type: watch.thisType,
+        id: obj.get(watch.targetField),
+        field: watch.thisField
+      });
+    }
+
+    // Update references relationships that have used this resource
+    const key = type+':'+id;
+    const existing = this._state.watchReference[key];
+    if ( existing ) {
+      notify.pushObjects(existing);
+      delete this._state.watchReference[key];
+    }
+
+    this.notifyFieldsChanged(notify);
+
+    if ( obj.wasRemoved && typeof obj.wasRemoved === 'function' ) {
       obj.wasRemoved();
     }
   },
@@ -666,37 +709,59 @@ var Store = Ember.Service.extend({
       }
     }
 
-
     let out = rec;
-    let cacheEntry = this.getById(type, rec.id);
-    // eslint-disable-next-line
-    let baseCacheEntry;
-    if ( baseType ) {
-      baseCacheEntry = this.getById(baseType, rec.id);
-    }
+    const cacheEntry = this.getById(type, rec.id);
 
     if ( cacheEntry )
     {
+      // Check for hasMany relationship changes
+      const watches = (this._state.watchHasMany[type]||[]).slice();
+      const notify = [];
+      if ( baseType ) {
+        watches.addObjects(this._state.watchHasMany[baseType]||[]);
+      }
+
+      let watch, oldVal, newVal;
+      for ( let i = 0 ; i < watches.length ; i++ ) {
+        watch = watches[i];
+        oldVal = cacheEntry.get(watch.targetField);
+        newVal = rec.get(watch.targetField);
+
+        //console.log('Compare', watch.targetField, oldVal, 'to', newVal);
+        if ( oldVal !== newVal ) {
+          notify.push({type: watch.thisType, id: oldVal, field: watch.thisField});
+          notify.push({type: watch.thisType, id: newVal, field: watch.thisField});
+        }
+      }
+
       cacheEntry.replaceWith(rec);
       out = cacheEntry;
+
+      // Update changed hasMany's
+      this.notifyFieldsChanged(notify);
     }
     else
     {
       this._add(type, rec);
+
       if ( baseType ) {
         this._add(baseType, rec);
       }
     }
 
-    if ( type && !this.neverMissing.includes(type) ) {
-      Ember.run.next(this,'_notifyMissing', type, rec.id);
+    return out;
+  },
 
-      if ( baseType && !this.neverMissing.includes(type) ) {
-        Ember.run.next(this,'_notifyMissing', baseType, rec.id);
+  notifyFieldsChanged(ary) {
+    let entry, tgt;
+    for ( let i = 0 ; i < ary.length ; i++ ) {
+      entry = ary[i];
+      tgt = this.getById(entry.type, entry.id);
+      if ( tgt ) {
+        //console.log('Notify', entry.type, entry.id, 'that', entry.field,'changed');
+        tgt.notifyPropertyChange(entry.field);
       }
     }
-
-    return out;
   },
 
   // Create a collection: {key: 'data'}
@@ -776,48 +841,6 @@ var Store = Ember.Service.extend({
 
     Object.defineProperty(output, 'store', {enumerable: false, value: this, configurable: true});
     return output;
-  },
-
-  // Handle missing records in denormalized arrays
-  // Get the cache map missing for [type]
-  _missingMap(type) {
-    type = normalizeType(type);
-    let cache = this._state.missingMap;
-    let group = cache[type];
-    if ( !group )
-    {
-      group = {};
-      cache[type] = group;
-    }
-
-    return group;
-  },
-
-  _missing(type, id, dependent, key) {
-    type = normalizeType(type);
-    let missingMap = this._missingMap(type);
-    let entries = missingMap[id];
-    if ( !entries ) {
-      entries = [];
-      missingMap[id] = entries;
-    }
-
-    //console.log('Missing', type, id, 'for', key, 'in', dependent);
-    entries.push({o: dependent, k: key});
-  },
-
-  _notifyMissing(type,id) {
-    let missingMap = this._missingMap(type);
-    let entries = missingMap[id];
-    //console.log('Notify missing',type,id, entries);
-    if ( entries ) {
-      entries.forEach((entry) => {
-        //console.log('Recomputing', entry.k, 'for', type, id, 'in', entry.o);
-        entry.o.notifyPropertyChange(entry.k);
-      });
-
-      entries.clear();
-    }
   },
 });
 
