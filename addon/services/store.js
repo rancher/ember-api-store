@@ -569,7 +569,7 @@ var Store = Ember.Service.extend({
     let watch, val;
     for ( let i = 0 ; i < watches.length ; i++ ) {
       watch = watches[i];
-      val = rec.get(watch.targetField);
+      val = obj.get(watch.targetField);
       notify.push({type: watch.thisType, id: val, field: watch.thisField});
     }
 
@@ -634,7 +634,7 @@ var Store = Ember.Service.extend({
     // Update hasMany relationships that refer to this resource
     const watches = this._state.watchHasMany[type]||[];
     const notify = [];
-    let watch, val;
+    let watch;
     for ( let i = 0 ; i < watches.length ; i++ ) {
       watch = watches[i];
       notify.push({
