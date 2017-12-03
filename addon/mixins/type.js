@@ -189,10 +189,7 @@ var Type = Ember.Mixin.create(Serializable,{
     }
 
     var json = this.serialize();
-    // Don't send included link maps/arrays
-    Object.keys(json.links||{}).forEach((k) => {
-      delete json[k];
-    });
+
     delete json['links'];
     delete json['actions'];
     delete json['actionLinks'];
@@ -272,12 +269,6 @@ var Type = Ember.Mixin.create(Serializable,{
     }
 
     var url = this.linkFor('self');
-    if ( this.constructor && this.constructor.alwaysInclude )
-    {
-      this.constructor.alwaysInclude.forEach(function(key) {
-        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
-      });
-    }
 
     opt = opt || {};
     if ( typeof opt.method === 'undefined' )

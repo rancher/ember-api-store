@@ -35,8 +35,6 @@ var Schema = Resource.extend({
       return true;
     });
 
-    out.addObjects(this.get('includeableLinks')||[]);
-
     return out;
   }.property(),
 

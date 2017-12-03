@@ -110,7 +110,7 @@ var Store = Ember.Service.extend({
   },
 
   isCacheable(opt) {
-    return !opt || (opt.depaginate && !opt.filter && !opt.include);
+    return !opt || (opt.depaginate && !opt.filter);
   },
 
   // Asynchronous, returns promise.
@@ -118,7 +118,6 @@ var Store = Ember.Service.extend({
   // find(type,id[,opt]): Query API for record [id] of [type]
   // opt:
   //  filter: Filter by fields, e.g. {field: value, anotherField: anotherValue} (default: none)
-  //  include: Include link information, e.g. ['link', 'anotherLink'] (default: none)
   //  forceReload: Ask the server even if the type+id is already in cache. (default: false)
   //  limit: Number of reqords to return per page (default: 1000)
   //  depaginate: If the response is paginated, retrieve all the pages. (default: true)
@@ -448,16 +447,6 @@ var Store = Ember.Service.extend({
       Object.defineProperty(response, 'xhr', {value: xhr, configurable: true});
       Ember.endPropertyChanges();
 
-      // Note which keys were included in each object
-      if ( opt.include && opt.include.length && response.forEach )
-      {
-        response.forEach((obj) => {
-          obj.includedKeys = obj.includedKeys || [];
-          obj.includedKeys.pushObjects(opt.include.slice());
-          obj.includedKeys = obj.includedKeys.uniq();
-        });
-      }
-
       // Depaginate
       if ( opt.depaginate && typeof response.depaginate === 'function' )
       {
@@ -590,7 +579,7 @@ var Store = Ember.Service.extend({
 
   // Add a lot of instances of the same type quickly.
   //   - There must be a model for the type already defined.
-  //   - Instances cannot contain any nested other types (e.g. include or subtypes),
+  //   - Instances cannot contain any nested other types (e.g. subtypes),
   //     (they will not be deserialized into their correct type.)
   //   - wasAdded hooks are not called
   // Basically this is just for loading schemas faster.
@@ -656,6 +645,11 @@ var Store = Ember.Service.extend({
 
     if ( obj.wasRemoved && typeof obj.wasRemoved === 'function' ) {
       obj.wasRemoved();
+    }
+
+    // If there's a different baseType, remove that one too
+    if ( obj.baseType && type !== obj.baseType ) {
+      this._remove(obj.baseType, obj);
     }
   },
 

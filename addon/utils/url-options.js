@@ -22,30 +22,6 @@ export function urlOptions(url,opt,cls) {
   }
   // End: Filter
 
-  // Include
-  let include = [];
-  if ( opt.include )
-  {
-    if ( Ember.isArray(opt.include) )
-    {
-      include.addObject(opt.include);
-    }
-    else
-    {
-      include.addObjects(opt.include);
-    }
-  }
-
-  if ( cls && cls.constructor.alwaysInclude )
-  {
-    include.addObjects(cls.constructor.alwaysInclude);
-  }
-
-  include.forEach(function(key) {
-    url += (url.indexOf('?') >= 0 ? '&' : '?') + 'include=' + encodeURIComponent(key);
-  });
-  // End: Include
-
 
   // Limit
   let limit = opt.limit;

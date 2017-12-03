@@ -27,15 +27,6 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
     }
 
     var cls = getOwner(this).lookup('model:'+normalizeType(this.get('resourceType')));
-    if ( cls && cls.constructor.alwaysInclude )
-    {
-      if ( !opt.include )
-      {
-        opt.include = [];
-      }
-
-      opt.include.addObjects(cls.constructor.alwaysInclude);
-    }
 
     if ( cls && cls.constructor.headers )
     {

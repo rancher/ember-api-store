@@ -1,6 +1,8 @@
 import Ember from 'ember';
 
 export function denormalizeIdArray(field, type=null, storeName="store") {
+  console.warn('Deprecated use of denormalizeIdArray', field, type, storeName);
+
   if (!type ) {
     type = field.replace(/Ids$/,'');
   }
@@ -26,6 +28,8 @@ export function denormalizeIdArray(field, type=null, storeName="store") {
 }
 
 export function denormalizeId(field=null, type=null, storeName="store") {
+  console.warn('Deprecated use of denormalizeId', field, type, storeName);
+
   if (!type ) {
     type = field.replace(/Id$/,'');
   }

@@ -28,11 +28,8 @@ var Resource = Actionable.extend(TypeMixin, {
 });
 
 Resource.reopenClass({
-  // You can provide an array of link names to always include when retrieving resources of this type
+  // Request a default sort if none is specified
   defaultSortBy: '',
-
-  // You can provide an array of link names to always include when retrieving resources of this type
-  alwaysInclude: null,
 
   // You can provide a function here to mangle data before it is passed to store.createRecord() for purposes of evil.
   mangleIn: null,
