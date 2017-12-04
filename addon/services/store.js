@@ -648,8 +648,9 @@ var Store = Ember.Service.extend({
     }
 
     // If there's a different baseType, remove that one too
-    if ( obj.baseType && type !== obj.baseType ) {
-      this._remove(obj.baseType, obj);
+    const baseType = normalizeType(obj.baseType);
+    if ( baseType && type !== baseType ) {
+      this._remove(baseType, obj);
     }
   },
 
@@ -693,10 +694,8 @@ var Store = Ember.Service.extend({
     }
 
     // This must be after createRecord so that mangleIn() can change the baseType
-    let baseType = rec.get('baseType');
+    let baseType = normalizeType(rec.get('baseType'));
     if ( baseType ) {
-      baseType = normalizeType(baseType);
-
       // Only use baseType if it's different from type
       if ( baseType === type ) {
         baseType = null;
