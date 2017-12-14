@@ -90,7 +90,9 @@ var Store = Ember.Service.extend({
   getById(type, id) {
     type = normalizeType(type);
     var group = this._groupMap(type);
-    return group[id];
+    if ( group ) {
+      return group[id];
+    }
   },
 
   // Synchronously returns whether record for [type] and [id] is in the local cache.
@@ -107,6 +109,12 @@ var Store = Ember.Service.extend({
     var type = normalizeType(obj.get('type'));
     var group = this._groupMap(type);
     return group[obj.get('id')] === obj;
+  },
+
+  hasType(name) {
+    var type = normalizeType(name);
+    var group = this._groupMap(type);
+    return !!group;
   },
 
   isCacheable(opt) {
@@ -434,13 +442,13 @@ var Store = Ember.Service.extend({
   },
 
   _requestSuccess(xhr,opt) {
-    if ( xhr.status === 204 )
-    {
+    opt.responseStatus = xhr.status;
+
+    if ( xhr.status === 204 ) {
       return;
     }
 
-    if ( xhr.body && typeof xhr.body === 'object' )
-    {
+    if ( xhr.body && typeof xhr.body === 'object' ) {
       Ember.beginPropertyChanges();
       let response = this._typeify(xhr.body);
       delete xhr.body;
@@ -448,21 +456,16 @@ var Store = Ember.Service.extend({
       Ember.endPropertyChanges();
 
       // Depaginate
-      if ( opt.depaginate && typeof response.depaginate === 'function' )
-      {
+      if ( opt.depaginate && typeof response.depaginate === 'function' ) {
         return response.depaginate().then(function() {
           return response;
         }).catch((xhr) => {
           return this._requestFailed(xhr,opt);
         });
-      }
-      else
-      {
+      } else {
         return response;
       }
-    }
-    else
-    {
+    } else {
       return xhr.body;
     }
   },
