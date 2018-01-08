@@ -119,7 +119,7 @@ export function validateChars(val, field, displayKey, intl, errors=[]) {
   return errors;
 }
 
-export function validateHostname(val, displayKey, intl, errors=[]) {
+export function validateHostname(val, displayKey, intl, errors=[], max=253) {
   // Hostname can not start with a dot
   if (val.slice(0,1) ==='.'){
       errors.push(intl.t('validation.dns.hostname.startDot', {key: displayKey}));
@@ -132,7 +132,6 @@ export function validateHostname(val, displayKey, intl, errors=[]) {
 
   // Total length of the hostname can be at most 253 characters
   // (255 minus one for null-termination, and one for the trailing dot of a real FQDN)
-  const max = 253;
   if (val.length > max) {
       errors.push(intl.t('validation.dns.hostname.tooLong', {key: displayKey, max: max}));
   }
@@ -182,7 +181,7 @@ export function validateDnsLabel(label, displayKey, intl, forHostname=false, err
   if ( label.length < min ) {
     errors.push(intl.t(`validation.dns.${errorKey}.emptyLabel`, {key: displayKey, min: min}));
   } else if  ( label.length > max ) {
-    errors.push(intl.t(`validation.dns.${errorKey}.labelTooLong`, {key: displayKey, max: max}));
+    errors.push(intl.t(`validation.dns.${errorKey}.tooLongLabel`, {key: displayKey, max: max}));
   }
 
   return errors;

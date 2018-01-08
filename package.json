@@ -1,6 +1,6 @@
 {
   "name": "ember-api-store",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "directories": {
     "doc": "doc",
     "test": "tests"

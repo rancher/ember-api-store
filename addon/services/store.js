@@ -118,7 +118,7 @@ var Store = Ember.Service.extend({
   },
 
   isCacheable(opt) {
-    return !opt || (opt.depaginate && !opt.filter);
+    return !opt || (opt.depaginate && !opt.filter && !opt.forceReload);
   },
 
   // Asynchronous, returns promise.
@@ -136,13 +136,11 @@ var Store = Ember.Service.extend({
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
 
-    if ( !id && !opt.limit )
-    {
+    if ( !id && !opt.limit ) {
       opt.limit = this.defaultPageSize;
     }
 
-    if ( !type )
-    {
+    if ( !type ) {
       return Ember.RSVP.reject(ApiError.create({detail: 'type not specified'}));
     }
 
@@ -151,17 +149,12 @@ var Store = Ember.Service.extend({
     opt.isForAll = !id && isCacheable;
 
     // See if we already have this resource, unless forceReload is on.
-    if ( opt.forceReload !== true )
-    {
-      if ( opt.isForAll && this._state.foundAll[type] )
-      {
+    if ( opt.forceReload !== true ) {
+      if ( opt.isForAll && this._state.foundAll[type] ) {
         return Ember.RSVP.resolve(this.all(type),'Cached find all '+type);
-      }
-      else if ( isCacheable && id )
-      {
+      } else if ( isCacheable && id ) {
         var existing = this.getById(type,id);
-        if ( existing )
-        {
+        if ( existing ) {
           return Ember.RSVP.resolve(existing,'Cached find '+type+':'+id);
         }
       }
@@ -169,12 +162,9 @@ var Store = Ember.Service.extend({
 
     // If URL is explicitly given, go straight to making the request.  Do not pass go, do not collect $200.
     // This is used for bootstraping to load the schema initially, and shouldn't be used for much else.
-    if ( opt.url )
-    {
+    if ( opt.url ) {
       return this._findWithUrl(opt.url, type, opt);
-    }
-    else
-    {
+    } else {
       // Otherwise lookup the schema for the type and generate the URL based on it.
       return this.find('schema', type, {url: 'schemas/'+encodeURIComponent(type)}).then((schema) => {
         if ( schema ) {
@@ -206,12 +196,9 @@ var Store = Ember.Service.extend({
     type = normalizeType(type);
     opt = opt || {};
 
-    if ( this.haveAll(type) && opt.forceReload !== true )
-    {
+    if ( this.haveAll(type) && this.isCacheable(opt) ) {
       return Ember.RSVP.resolve(this.all(type),'All '+ type + ' already cached');
-    }
-    else
-    {
+    } else {
       return this.find(type, undefined, opt).then(() => {
         return this.all(type);
       });
@@ -222,14 +209,12 @@ var Store = Ember.Service.extend({
     var origin = window.location.origin;
 
     // Make absolute URLs to ourselves root-relative
-    if ( includingAbsolute && url.indexOf(origin) === 0 )
-    {
+    if ( includingAbsolute && url.indexOf(origin) === 0 ) {
       url = url.substr(origin.length);
     }
 
     // Make relative URLs root-relative
-    if ( !url.match(/^https?:/) && url.indexOf('/') !== 0 )
-    {
+    if ( !url.match(/^https?:/) && url.indexOf('/') !== 0 ) {
       url = this.get('baseUrl').replace(/\/\+$/,'') + '/' + url;
     }
 
@@ -242,29 +227,22 @@ var Store = Ember.Service.extend({
     opt.url = this.normalizeUrl(opt.url);
     opt.headers = this._headers(opt.headers);
     opt.processData = false;
-    if ( typeof opt.dataType === 'undefined' )
-    {
+    if ( typeof opt.dataType === 'undefined' ) {
       opt.dataType = 'text'; // Don't let jQuery JSON parse
     }
 
-    if ( opt.timeout !== null && !opt.timeout )
-    {
+    if ( opt.timeout !== null && !opt.timeout ) {
       opt.timeout = this.defaultTimeout;
     }
 
-    if ( opt.data )
-    {
-      if ( !opt.contentType )
-      {
+    if ( opt.data ) {
+      if ( !opt.contentType ) {
         opt.contentType = 'application/json';
       }
 
-      if ( Serializable.detect(opt.data) )
-      {
+      if ( Serializable.detect(opt.data) ) {
         opt.data = JSON.stringify(opt.data.serialize());
-      }
-      else if ( typeof opt.data === 'object' )
-      {
+      } else if ( typeof opt.data === 'object' ) {
         opt.data = JSON.stringify(opt.data);
       }
     }
@@ -291,28 +269,22 @@ var Store = Ember.Service.extend({
   // Forget about all the resources that hae been previously remembered.
   reset() {
     var cache = this._state.cache;
-    if ( cache )
-    {
+    if ( cache ) {
       Object.keys(cache).forEach((key) => {
         if ( cache[key] && cache[key].clear ) {
           cache[key].clear();
         }
       });
-    }
-    else
-    {
+    } else {
       this._state.cache = {};
     }
 
     var foundAll = this._state.foundAll;
-    if ( foundAll )
-    {
+    if ( foundAll ) {
       Object.keys(foundAll).forEach((key) => {
         foundAll[key] = false;
       });
-    }
-    else
-    {
+    } else {
       this._state.foundAll = {};
     }
 
