@@ -766,6 +766,16 @@ var Store = Ember.Service.extend({
     return cls;
   },
 
+  canCreate(type) {
+    let schema = this.getById('schema',type);
+    return schema && schema.collectionMethods && schema.collectionMethods.indexOf('POST') > -1;
+  },
+
+  canList(type) {
+    let schema = this.getById('schema',type);
+    return schema && schema.collectionMethods && schema.collectionMethods.indexOf('GET') > -1;
+  },
+
   // Create a record: {applyDefaults: false}
   createRecord(data, opt) {
     opt = opt || {};
