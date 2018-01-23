@@ -135,7 +135,6 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
 
 // workload ... pods: hasMany('id', 'pod', 'workloadId')
 export function hasMany(matchField, targetType, targetField, storeName="store", additionalFilter=null) {
-  let registered = false;
   targetType = normalizeType(targetType);
 
   return Ember.computed({
@@ -143,22 +142,21 @@ export function hasMany(matchField, targetType, targetField, storeName="store", 
       let store = this.get(storeName);
       const thisType = normalizeType(this.get('type'));
 
-      if ( !registered ) {
-        let watch = store._state.watchHasMany[targetType];
-        if ( !watch ) {
-          watch = [];
-          store._state.watchHasMany[targetType] = watch;
-        }
+      let watch = store._state.watchHasMany[targetType];
+      if ( !watch ) {
+        watch = [];
+        store._state.watchHasMany[targetType] = watch;
+      }
 
+      const key = `${computedKey}/${thisType}/${matchField}/${targetField}`
+      if ( !watch.findBy('key', key) ) {
         watch.push({
+          key,
           thisField: computedKey,
           thisType,
           matchField,
           targetField
         });
-
-        //console.log('Registered hasMany for', thisType, matchField, 'to', targetType, targetField, 'in', storeName);
-        registered = true;
       }
 
       //console.log('get hasMany for', thisType, matchField, 'to', targetType, targetField, 'in', storeName);
