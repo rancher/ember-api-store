@@ -88,7 +88,7 @@ var Store = Ember.Service.extend({
   // Synchronously get record from local cache by [type] and [id].
   // Returns undefined if the record is not in cache, does not talk to API.
   getById(type, id) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var group = this._groupMap(type);
     if ( group ) {
       return group[id];
@@ -106,13 +106,13 @@ var Store = Ember.Service.extend({
       return false;
     }
 
-    var type = normalizeType(obj.get('type'));
+    var type = normalizeType(obj.get('type'), this);
     var group = this._groupMap(type);
     return group[obj.get('id')] === obj;
   },
 
   hasType(name) {
-    var type = normalizeType(name);
+    var type = normalizeType(name, this);
     var group = this._groupMap(type);
     return !!group;
   },
@@ -132,7 +132,7 @@ var Store = Ember.Service.extend({
   //  headers: Headers to send in the request (default: none).  Also includes ones specified in the model constructor.
   //  url: Use this specific URL instead of looking up the URL for the type/id.  This should only be used for bootstraping schemas on startup.
   find(type, id, opt) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     opt = opt || {};
     opt.depaginate = opt.depaginate !== false;
 
@@ -181,19 +181,19 @@ var Store = Ember.Service.extend({
 
   // Returns a 'live' array of all records of [type] in the cache.
   all(type) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var group = this._group(type);
     return this._createArrayProxy(group);
   },
 
   haveAll(type) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     return this._state.foundAll[type];
   },
 
   // find(type) && return all(type)
   findAll(type, opt) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     opt = opt || {};
 
     if ( this.haveAll(type) && this.isCacheable(opt) ) {
@@ -298,7 +298,7 @@ var Store = Ember.Service.extend({
   },
 
   resetType(type) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var group = this._group(type);
     this._state.foundAll[type] = false;
     this._state.cacheMap[type] = {};
@@ -490,7 +490,7 @@ var Store = Ember.Service.extend({
 
   // Get the cache array group for [type]
   _group(type) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var cache = this._state.cache;
     var group = cache[type];
     if ( !group )
@@ -504,7 +504,7 @@ var Store = Ember.Service.extend({
 
   // Get the cache map group for [type]
   _groupMap(type) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var cache = this._state.cacheMap;
     var group = cache[type];
     if ( !group )
@@ -518,7 +518,7 @@ var Store = Ember.Service.extend({
 
   // Add a record instance of [type] to cache
   _add(type, obj) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     const id = obj.id;
     const group = this._group(type);
     const groupMap = this._groupMap(type);
@@ -559,7 +559,7 @@ var Store = Ember.Service.extend({
   //   - wasAdded hooks are not called
   // Basically this is just for loading schemas faster.
   _bulkAdd(type, pojos) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     var group = this._group(type);
     var groupMap = this._groupMap(type);
     var cls = getOwner(this).lookup('model:'+type);
@@ -575,7 +575,7 @@ var Store = Ember.Service.extend({
       // Schemas are special
       if ( type === 'schema' ) {
         input._id = input.id;
-        input.id = normalizeType(input.id);
+        input.id = normalizeType(input.id, this);
       }
 
       input.store = this;
@@ -587,7 +587,7 @@ var Store = Ember.Service.extend({
 
   // Remove a record of [type] from cache, given the id or the record instance.
   _remove(type, obj) {
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     const id = obj.id;
     const group = this._group(type);
     const groupMap = this._groupMap(type);
@@ -623,7 +623,7 @@ var Store = Ember.Service.extend({
     }
 
     // If there's a different baseType, remove that one too
-    const baseType = normalizeType(obj.baseType);
+    const baseType = normalizeType(obj.baseType, this);
     if ( baseType && type !== baseType ) {
       this._remove(baseType, obj);
     }
@@ -653,7 +653,7 @@ var Store = Ember.Service.extend({
       return input;
     }
 
-    type = normalizeType(type);
+    type = normalizeType(type, this);
     if ( type === 'collection')
     {
       return this.createCollection(input, opt);
@@ -669,7 +669,7 @@ var Store = Ember.Service.extend({
     }
 
     // This must be after createRecord so that mangleIn() can change the baseType
-    let baseType = normalizeType(rec.get('baseType'));
+    let baseType = normalizeType(rec.get('baseType'), this);
     if ( baseType ) {
       // Only use baseType if it's different from type
       if ( baseType === type ) {
@@ -779,7 +779,7 @@ var Store = Ember.Service.extend({
   // Create a record: {applyDefaults: false}
   createRecord(data, opt) {
     opt = opt || {};
-    let type = normalizeType(Ember.get(opt,'type')||Ember.get(data,'type')||'');
+    let type = normalizeType(Ember.get(opt,'type')||Ember.get(data,'type')||'', this);
 
     let cls;
     if ( type ) {
