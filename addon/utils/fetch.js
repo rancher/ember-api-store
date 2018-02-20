@@ -19,13 +19,19 @@ function done(res) {
   let ct = res.headers.get("content-type");
   if ( res.status === 204 ) {
     return respond(res);
-  } else  if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
-    return res.json().then(function(body) {
-      return respond(res,body);
-    });
   } else {
-    return res.text().then(function(body) {
-      return respond(res,body);
+    return res.text().then((body) => {
+      if (body.length) {
+        if (ct && ct.toLowerCase().indexOf("application/json") >= 0) {
+          // return res.json().then(function(body) {
+          return respond(res,JSON.parse(body));
+          // });
+        }
+      } else {
+        // return res.text().then(function(body) {
+        return respond(res, null);
+        // });
+      }
     });
   }
 }

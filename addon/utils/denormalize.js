@@ -112,7 +112,7 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
     referencedType = field.replace(/Id$/,'');
   }
 
-  return Ember.computed(field+'.@each.id', {
+  return Ember.computed(field+'.[]', {
     get(computedKey) {
       const store = this.get(storeName);
       const thisType = this.get('type');
@@ -128,7 +128,7 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
         }
       }
 
-      return entry;
+      return out;
     }
   });
 }
@@ -159,7 +159,7 @@ export function hasMany(matchField, targetType, targetField, storeName="store", 
         });
       }
 
-      //console.log('get hasMany for', thisType, matchField, 'to', targetType, targetField, 'in', storeName);
+      // console.log('get hasMany for', thisType, matchField, 'to', targetType, targetField, 'in', storeName);
       let out = store.all(targetType).filterBy(targetField, this.get(matchField));
       if ( additionalFilter ) {
         out = out.filter(additionalFilter);
