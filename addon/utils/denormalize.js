@@ -1,51 +1,6 @@
 import Ember from 'ember';
 import { normalizeType } from '../utils/normalize';
 
-export function denormalizeIdArray(field, type=null, storeName="store") {
-  console.warn('Deprecated use of denormalizeIdArray', field, type, storeName);
-
-  if (!type ) {
-    type = field.replace(/Ids$/,'');
-  }
-
-  let computed = Ember.computed(field+'.[]', {
-    get(key) {
-      let out = [];
-      let store = this.get(storeName);
-      (this.get(field)||[]).forEach((id) => {
-        let obj = store.getById(type, id);
-        if ( obj ) {
-          out.push(obj);
-        } else {
-          store._missing(type, id, this, key);
-        }
-      });
-
-      return out;
-    }
-  });
-
-  return computed;
-}
-
-export function denormalizeId(field=null, type=null, storeName="store") {
-  console.warn('Deprecated use of denormalizeId', field, type, storeName);
-
-  if (!type ) {
-    type = field.replace(/Id$/,'');
-  }
-
-  return Ember.computed(field, {
-    get(/*key*/) {
-      let id = this.get(field);
-      let store = this.get(storeName);
-      if ( id ) {
-        return store.getById(type, id);
-      }
-    }
-  });
-}
-
 function _getReference(store, referencedType, referencedId, thisType, thisId, computedKey) {
   const watchKey = referencedType+':'+referencedId;
 
@@ -117,7 +72,7 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
       const store = this.get(storeName);
       const thisType = this.get('type');
       const thisId = this.get('id');
-      const idArray = this.get(field);
+      const idArray = this.get(field)||[];
 
       const out = [];
       let entry;
