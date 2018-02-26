@@ -26,6 +26,8 @@ function done(res) {
           // return res.json().then(function(body) {
           return respond(res,JSON.parse(body));
           // });
+        } else {
+          return respond(res, body);
         }
       } else {
         // return res.text().then(function(body) {
