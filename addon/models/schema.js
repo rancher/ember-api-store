@@ -1,5 +1,6 @@
 import Resource from './resource';
 import { normalizeType } from '../utils/normalize';
+import { get } from '@ember/object';
 
 export const SCHEMA = {
   SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json'],
@@ -12,16 +13,16 @@ function parseType(type) {
 
 var Schema = Resource.extend({
   getFieldNames() {
-    return Object.keys(this.get('resourceFields'));
+    return Object.keys(get(this, 'resourceFields'));
   },
 
   typeifyFields: function() {
     // Schemas are special..
-    if ( this.get('id') === 'schema' ) {
+    if ( get(this, 'id') === 'schema' ) {
       return [];
     }
 
-    let fields = this.get('resourceFields')||{};
+    let fields = get(this, 'resourceFields')||{};
     let keys = Object.keys(fields);
 
     let out = keys.filter(function(k) {
@@ -38,9 +39,31 @@ var Schema = Resource.extend({
     return out;
   }.property(),
 
+  getLoadDefaults(record, forceOverwrite=false) {
+    var fields = get(this, 'resourceFields');
+
+    Object.keys(fields).forEach( key => {
+      var field = fields[key];
+      var def = field['default'];
+
+      if ( field.create &&  def !== null && typeof def !== 'undefined' )
+      {
+        if (forceOverwrite) {
+          record[key] = JSON.parse(JSON.stringify(def));
+        } else {
+          if (!record[key]) {
+            record[key] = JSON.parse(JSON.stringify(def));
+          }
+        }
+      }
+    });
+
+    return record;
+  },
+
   getCreateDefaults(more) {
     var out = {};
-    var fields = this.get('resourceFields');
+    var fields = get(this, 'resourceFields');
 
     Object.keys(fields).forEach(function(key) {
       var field = fields[key];
@@ -66,7 +89,7 @@ var Schema = Resource.extend({
   },
 
   optionsFor(field) {
-    let obj = this.get('resourceFields')[field];
+    let obj = get(this, 'resourceFields')[field];
     if ( obj && obj.options ) {
       return (obj.options||[]).slice();
     }
@@ -75,7 +98,7 @@ var Schema = Resource.extend({
   },
 
   typesFor(fieldName) {
-    const field = this.get('resourceFields')[fieldName];
+    const field = get(this, 'resourceFields')[fieldName];
     if ( !field || !field.type ) {
       return [];
     }
@@ -107,7 +130,7 @@ var Schema = Resource.extend({
   },
 
   referencedTypeFor(field) {
-    const obj = this.get('resourceFields')[field];
+    const obj = get(this, 'resourceFields')[field];
     const type = obj.type;
     const match = type.match(/^reference\[([^\]]*)\]$/);
 
