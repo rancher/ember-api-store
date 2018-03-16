@@ -47,7 +47,7 @@ var Resource = Actionable.extend(TypeMixin, {
   },
 
   schema: function() {
-    const schema = this.get('store').getById('schema', type);
+    const schema = this.get('store').getById('schema', this.get('type'));
     return schema;
   }.property('type'),
 
