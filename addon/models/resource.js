@@ -46,6 +46,11 @@ var Resource = Actionable.extend(TypeMixin, {
     return data;
   },
 
+  schema: function() {
+    const schema = this.get('store').getById('schema', type);
+    return schema;
+  }.property('type'),
+
   validationErrors() {
     const intl = this.get('intl');
 
