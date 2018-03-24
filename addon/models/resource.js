@@ -97,7 +97,12 @@ var Resource = Actionable.extend(TypeMixin, {
         set(this, key, val);
       } else if ( field.type === 'int' && typeof val === 'string' ) {
         // Coerce strings to ints
-        val = parseInt(val, 10) || null;
+        val = parseInt(val, 10);
+
+        if ( isNaN(val) ) {
+          val = null;
+        }
+
         set(this, key, val);
       }
 
