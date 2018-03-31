@@ -1,6 +1,6 @@
 import Resource from './resource';
 import { normalizeType } from '../utils/normalize';
-import { get } from '@ember/object';
+import { get, set } from '@ember/object';
 
 export const SCHEMA = {
   SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json'],
@@ -49,10 +49,10 @@ var Schema = Resource.extend({
       if ( field.create &&  def !== null && typeof def !== 'undefined' )
       {
         if (forceOverwrite) {
-          record[key] = JSON.parse(JSON.stringify(def));
+          set(record, key, JSON.parse(JSON.stringify(def)));
         } else {
           if (!record[key]) {
-            record[key] = JSON.parse(JSON.stringify(def));
+            set(record, key, JSON.parse(JSON.stringify(def)));
           }
         }
       }
@@ -73,7 +73,7 @@ var Schema = Resource.extend({
       {
         if ( typeof def !== 'undefined' )
         {
-          out[key] = JSON.parse(JSON.stringify(def));
+          set(out, key, JSON.parse(JSON.stringify(def)));
         }
       }
     });
@@ -81,7 +81,7 @@ var Schema = Resource.extend({
     if ( more )
     {
       Object.keys(more).forEach(function(key) {
-        out[key] = more[key];
+        set(out, key, get(more, key))
       });
     }
 
