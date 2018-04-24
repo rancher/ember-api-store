@@ -89,12 +89,16 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
 }
 
 // workload ... pods: hasMany('id', 'pod', 'workloadId')
-export function hasMany(matchField, targetType, targetField, storeName="store", additionalFilter=null) {
+export function hasMany(matchField, targetType, targetField, storeName="store", additionalFilter=null, sourceStoreName=null) {
   targetType = normalizeType(targetType);
 
   return Ember.computed({
     get(computedKey) {
       let store = this.get(storeName);
+      let sourceStore;
+      if ( sourceStoreName ) {
+        sourceStore = this.get(sourceStoreName);
+      }
       const thisType = normalizeType(this.get('type'));
 
       let watch = store._state.watchHasMany[targetType];
@@ -110,7 +114,8 @@ export function hasMany(matchField, targetType, targetField, storeName="store", 
           thisField: computedKey,
           thisType,
           matchField,
-          targetField
+          targetField,
+          sourceStore,
         });
       }
 

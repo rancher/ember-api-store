@@ -534,7 +534,7 @@ var Store = Ember.Service.extend({
     for ( let i = 0 ; i < watches.length ; i++ ) {
       watch = watches[i];
       val = obj.get(watch.targetField);
-      notify.push({type: watch.thisType, id: val, field: watch.thisField});
+      notify.push({type: watch.thisType, id: val, field: watch.thisField, sourceStore: watch.sourceStore});
     }
 
     // Update references relationships that have been looking for this resource
@@ -724,7 +724,12 @@ var Store = Ember.Service.extend({
     let entry, tgt;
     for ( let i = 0 ; i < ary.length ; i++ ) {
       entry = ary[i];
-      tgt = this.getById(entry.type, entry.id);
+      if ( entry.sourceStore ) {
+        tgt = entry.sourceStore.getById(entry.type, entry.id);
+      } else {
+        tgt = this.getById(entry.type, entry.id);
+      }
+
       if ( tgt ) {
         //console.log('Notify', entry.type, entry.id, 'that', entry.field,'changed');
         tgt.notifyPropertyChange(entry.field);
