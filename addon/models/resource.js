@@ -13,7 +13,7 @@ const STRING_LIKE_TYPES = [
   'multiline',
   'masked',
   'password',
-  'dnslLabel',
+  'dnsLabel',
   'hostname',
 ];
 
@@ -136,7 +136,7 @@ var Resource = Actionable.extend(TypeMixin, {
       validateLength(val, field, displayKey, intl, errors);
       validateChars( val, field, displayKey, intl, errors);
 
-      if ( field.type === 'dnsLabel' || field.type === 'hostname' ) {
+      if ( len && (field.type === 'dnsLabel' || field.type === 'hostname') ) {
         // DNS types should be lowercase
         const tolower = (val||'').toLowerCase();
         if ( tolower !== val ) {
@@ -145,7 +145,7 @@ var Resource = Actionable.extend(TypeMixin, {
         }
 
         if ( field.type === 'dnsLabel' ) {
-          validateDnsLabel(val, displayKey, intl, errors);
+          validateDnsLabel(val, displayKey, intl, false, errors);
         } else if ( field.type === 'hostname') {
           validateHostname(val, displayKey, intl, errors);
         }
