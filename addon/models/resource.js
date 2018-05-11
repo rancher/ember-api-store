@@ -136,7 +136,7 @@ var Resource = Actionable.extend(TypeMixin, {
       validateLength(val, field, displayKey, intl, errors);
       validateChars( val, field, displayKey, intl, errors);
 
-      if ( len && (field.type === 'dnsLabel' || field.type === 'hostname') ) {
+      if ( (key !== 'id') && len && (field.type === 'dnsLabel' || field.type === 'hostname') ) {
         // DNS types should be lowercase
         const tolower = (val||'').toLowerCase();
         if ( tolower !== val ) {
