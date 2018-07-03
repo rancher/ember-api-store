@@ -21,19 +21,19 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
   },
 
   request: function(opt) {
-    if ( !opt.headers )
-    {
+    const store = this.get('store');
+
+    if ( !opt.headers ) {
       opt.headers = {};
     }
 
-    var cls = getOwner(this).lookup('model:'+normalizeType(this.get('resourceType')));
+    var cls = getOwner(store).lookup('model:'+normalizeType(this.get('resourceType')));
 
-    if ( cls && cls.constructor.headers )
-    {
+    if ( cls && cls.constructor.headers ) {
       copyHeaders(cls.constructor.headers, opt.headers);
     }
 
-    return this.get('store').request(opt);
+    return store.request(opt);
   },
 
   depaginate: function(depth) {
