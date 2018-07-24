@@ -3,7 +3,7 @@ import { normalizeType } from '../utils/normalize';
 import { get, set } from '@ember/object';
 
 export const SCHEMA = {
-  SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json'],
+  SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json','dnsLabel','hostname','dnsLabelRestricted'],
 //  NESTED: ['array','map'],
 };
 
