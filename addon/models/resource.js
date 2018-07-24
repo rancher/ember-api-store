@@ -136,7 +136,7 @@ var Resource = Actionable.extend(TypeMixin, {
       validateLength(val, field, displayKey, intl, errors);
       validateChars( val, field, displayKey, intl, errors);
 
-      if ( (key !== 'id') && len && (field.type === 'dnsLabel' || field.type === 'hostname') ) {
+      if ( (key !== 'id') && len && (field.type === 'dnsLabel' || field.type === 'dnsLabelRestricted' || field.type === 'hostname') ) {
         // DNS types should be lowercase
         const tolower = (val||'').toLowerCase();
         if ( tolower !== val ) {
@@ -145,7 +145,9 @@ var Resource = Actionable.extend(TypeMixin, {
         }
 
         if ( field.type === 'dnsLabel' ) {
-          validateDnsLabel(val, displayKey, intl, false, errors);
+          validateDnsLabel(val, displayKey, intl, {restricted: false}, errors);
+        } else if ( field.type === 'dnsLabelRestricted' ) {
+          validateDnsLabel(val, displayKey, intl, {restricted: true}, errors);
         } else if ( field.type === 'hostname') {
           validateHostname(val, displayKey, intl, errors);
         }

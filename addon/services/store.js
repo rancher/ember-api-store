@@ -631,8 +631,7 @@ var Store = Ember.Service.extend({
 
   // Turn a POJO into a Model: {updateStore: true}
   _typeify(input, opt=null) {
-    if ( !input || typeof input !== 'object')
-    {
+    if ( !input || typeof input !== 'object') {
       // Simple values can just be returned
       return input;
     }
@@ -642,24 +641,18 @@ var Store = Ember.Service.extend({
     }
 
     let type = Ember.get(input,'type');
-    if ( Ember.isArray(input) )
-    {
+    if ( Ember.isArray(input) ) {
       // Recurse over arrays
       return input.map(x => this._typeify(x, opt));
-    }
-    else if ( !type )
-    {
+    } else if ( !type ) {
       // If it doesn't have a type then there's no sub-fields to typeify
       return input;
     }
 
     type = normalizeType(type, this);
-    if ( type === 'collection')
-    {
+    if ( type === 'collection') {
       return this.createCollection(input, opt);
-    }
-    else if ( !type )
-    {
+    } else if ( !type ) {
       return input;
     }
 
@@ -680,8 +673,7 @@ var Store = Ember.Service.extend({
     let out = rec;
     const cacheEntry = this.getById(type, rec.id);
 
-    if ( cacheEntry )
-    {
+    if ( cacheEntry ) {
       // Check for hasMany relationship changes
       const watches = (this._state.watchHasMany[type]||[]).slice();
       const notify = [];
@@ -707,9 +699,7 @@ var Store = Ember.Service.extend({
 
       // Update changed hasMany's
       this.notifyFieldsChanged(notify);
-    }
-    else
-    {
+    } else {
       this._add(type, rec);
 
       if ( baseType ) {

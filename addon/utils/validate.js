@@ -148,17 +148,28 @@ export function validateHostname(val, displayKey, intl, errors=[], max=253) {
         continue;
     }
 
-    validateDnsLabel(label, displayKey, intl, true, errors);
+    validateDnsLabel(label, displayKey, intl, {forHostname: true}, errors);
   }
 
   return errors;
 }
 
-export function validateDnsLabel(label, displayKey, intl, forHostname=false, errors=[]) {
-  const errorKey = (forHostname ? 'hostname' : 'label');
+export function validateDnsLabel(label, displayKey, intl, opts, errors=[]) {
+  opts = opts || {};
 
-  // Label must consist of a-z, 0-9 and hyphen @TODO punycode support
+  const forHostname = opts.forHostname || false;
+  const errorKey = (forHostname ? 'hostname' : 'label');
+  const restricted = opts.restricted || false;
+
+  // [a-z]([-a-z0-9]*[a-z0-9])?
+
+  // Label must consist of a-z, 0-9 and hyphen
   validateChars(label, {validChars: 'A-Za-z0-9-'}, displayKey, intl, errors);
+
+  // Restricted labels cannot begin with a number
+  if ( restricted && label.slice(0,1).match(/[0-9]/) ) {
+    errors.push(intl.t(`validation.dns.${errorKey}.startNumber`, {key: displayKey}));
+  }
 
   // Label cannot begin with a hyphen
   if ( label.slice(0,1) === '-' ) {
