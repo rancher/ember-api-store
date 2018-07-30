@@ -185,7 +185,7 @@ Resource.reopen({
         val.forEach((v, idx) => {
           var out = recurse(v, depth+1);
           if ( val.objectAt(idx) !== out ) {
-            val.replace(idx, 1, out);
+            val.replace(idx, 1, [out]);
           }
         });
         val.endPropertyChanges();
