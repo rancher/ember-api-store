@@ -36,7 +36,7 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
     return store.request(opt);
   },
 
-  depaginate: function(depth) {
+  depaginate: function(depth, opt) {
     var self = this;
 
     depth = depth || 1;
@@ -51,7 +51,15 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
     */
 
     var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-      var next = self.get('pagination.next');
+      var next = self.get('pagination.next') || ''
+      if(opt && next.indexOf('?') !== -1) {
+        let queryString = next.slice(next.indexOf('?'))
+        let url = opt.url || ''
+        if (url.indexOf('?') !== -1) {
+          url = url.slice(0, url.indexOf('?'))
+        }
+        next = url + queryString
+      }
       if ( next )
       {
         console.log('Depaginate, requesting', next);

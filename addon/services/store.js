@@ -429,7 +429,7 @@ var Store = Ember.Service.extend({
 
       // Depaginate
       if ( opt.depaginate && typeof response.depaginate === 'function' ) {
-        return response.depaginate().then(function() {
+        return response.depaginate(null, opt).then(function() {
           return response;
         }).catch((xhr) => {
           return this._requestFailed(xhr,opt);
