@@ -188,6 +188,12 @@ var Type = Ember.Mixin.create(Serializable,{
       opt.url = opt.url || type;
     }
 
+    if ( opt.qp ) {
+      for (var k in opt.qp ) {
+        opt.url += (opt.url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(k) + '=' + encodeURIComponent(opt.qp[k]);
+      }
+    }
+
     var json = this.serialize();
 
     delete json['links'];
