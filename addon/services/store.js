@@ -247,13 +247,14 @@ var Store = Ember.Service.extend({
   // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
   rawRequest(opt) {
     opt.url = this.normalizeUrl(opt.url);
+    opt.headers = this._headers(opt.headers);
 
     let fastboot = get(this, 'fastboot');
     if ( fastboot && fastboot.isFastBoot ) {
       console.log('[Fastboot]', opt.url);
+      opt.headers['cookie'] = get(fastboot, 'request.headers.cookie');
     }
 
-    opt.headers = this._headers(opt.headers);
     opt.processData = false;
     if ( typeof opt.dataType === 'undefined' ) {
       opt.dataType = 'text'; // Don't let jQuery JSON parse
