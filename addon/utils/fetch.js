@@ -1,5 +1,5 @@
-import _fetch from "fetch";
-import Ember from 'ember';
+import _fetch from 'fetch';
+import { reject } from 'rsvp'
 
 export function fetch(url,opt) {
   opt = opt || {};
@@ -16,7 +16,11 @@ export function fetch(url,opt) {
 }
 
 function done(res) {
-  let ct = res.headers.get("content-type");
+  let ct = '';
+  if ( res && res.headers ) {
+    ct = res.headers.get("content-type");
+  }
+
   if ( res.status === 204 ) {
     return respond(res);
   } else {
@@ -49,7 +53,7 @@ function respond(res, body) {
   if (res.ok) {
     return out;
   } else {
-    return Ember.RSVP.reject(out);
+    return reject(out);
   }
 }
 

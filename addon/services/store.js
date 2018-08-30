@@ -5,6 +5,7 @@ import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
 import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from '../utils/url-options';
+import { get, set } from '@ember/object';
 
 const { getOwner } = Ember;
 
@@ -24,7 +25,7 @@ var Store = Ember.Service.extend({
   metaKeys: null,
   replaceActions: 'actionLinks',
   dropKeys: null,
-  shoeboxName: 'ember-api-store',
+  shoeboxName: null,
   headers: null,
 
   arrayProxyClass: Ember.ArrayProxy,
@@ -42,9 +43,9 @@ var Store = Ember.Service.extend({
   init() {
     this._super();
 
-    if (!this.get('metaKeys') )
+    if (!get(this, 'metaKeys') )
     {
-      this.set('metaKeys', defaultMetaKeys.slice());
+      set(this, 'metaKeys', defaultMetaKeys.slice());
     }
 
     this._state = {
@@ -58,24 +59,6 @@ var Store = Ember.Service.extend({
       missingReference: null,
     };
 
-    let fastboot = this.get('fastboot');
-    if ( fastboot )
-    {
-      let name = this.get('shoeboxName');
-      if ( fastboot.get('isFastBoot') )
-      {
-        fastboot.get('shoebox').put(name, this._state);
-      }
-      else
-      {
-        let box = fastboot.get('shoebox').retrieve(name);
-        if ( box )
-        {
-          this._state = box;
-        }
-      }
-    }
-
     this.reset();
   },
 
@@ -84,6 +67,33 @@ var Store = Ember.Service.extend({
 
   // You can observe this to tell when a reset() happens
   generation: 0,
+
+  initFastBoot(name) {
+    let fastboot = get(this, 'fastboot');
+    if ( fastboot ) {
+      if ( fastboot.get('isFastBoot') ) {
+        fastboot.get('shoebox').put(name, {
+          cache: this._state.cache,
+          foundAll: this._state.foundAll,
+        });
+      } else {
+        let box = fastboot.get('shoebox').retrieve(name);
+        if ( box ) {
+          Object.keys(box.foundAll || {}).forEach((key) => {
+            this._state.foundAll[key] = box.foundAll[key];
+          });
+
+          let i;
+          Object.keys(box.cache || {}).forEach((type) => {
+            let list = box.cache[type];
+            for ( i = 0 ; i < list.length ; i++ ) {
+              this._typeify(list[i]);
+            }
+          });
+        }
+      }
+    }
+  },
 
   // Synchronously get record from local cache by [type] and [id].
   // Returns undefined if the record is not in cache, does not talk to API.
@@ -206,7 +216,14 @@ var Store = Ember.Service.extend({
   },
 
   normalizeUrl(url, includingAbsolute=false) {
-    var origin = window.location.origin;
+    let fastboot = get(this, 'fastboot');
+    let origin;
+
+    if ( fastboot && fastboot.isFastBoot ) {
+      origin = `${fastboot.request.protocol}//${fastboot.request.host}`;
+    } else {
+      origin = window.location.origin;
+    }
 
     // Make absolute URLs to ourselves root-relative
     if ( includingAbsolute && url.indexOf(origin) === 0 ) {
@@ -215,7 +232,12 @@ var Store = Ember.Service.extend({
 
     // Make relative URLs root-relative
     if ( !url.match(/^https?:/) && url.indexOf('/') !== 0 ) {
-      url = this.get('baseUrl').replace(/\/\+$/,'') + '/' + url;
+      url = get(this, 'baseUrl').replace(/\/\+$/,'') + '/' + url;
+    }
+
+    // For fastboot everything has to be absolute
+    if ( fastboot && !url.match(/^https?:/) ) {
+      url = `${origin}${url}`
     }
 
     return url;
@@ -225,6 +247,12 @@ var Store = Ember.Service.extend({
   // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
   rawRequest(opt) {
     opt.url = this.normalizeUrl(opt.url);
+
+    let fastboot = get(this, 'fastboot');
+    if ( fastboot && fastboot.isFastBoot ) {
+      console.log('[Fastboot]', opt.url);
+    }
+
     opt.headers = this._headers(opt.headers);
     opt.processData = false;
     if ( typeof opt.dataType === 'undefined' ) {
@@ -313,7 +341,7 @@ var Store = Ember.Service.extend({
       [this.arrayProxyKey]: content
     };
 
-    let opt = this.get('arrayProxyOptions')||{};
+    let opt = get(this, 'arrayProxyOptions')||{};
     Object.keys(opt).forEach((key) => {
       data[key] = opt[key];
     });
@@ -327,7 +355,7 @@ var Store = Ember.Service.extend({
       'content-type': 'application/json',
     };
 
-    applyHeaders(this.get('headers'), out);
+    applyHeaders(get(this, 'headers'), out);
     applyHeaders(perRequest, out);
     return out;
   },
@@ -445,40 +473,31 @@ var Store = Ember.Service.extend({
   _requestFailed(xhr,opt) {
     var body;
 
-    if ( xhr.err )
-    {
-      if ( xhr.err === 'timeout' )
-      {
+    if ( xhr.err ) {
+      if ( xhr.err === 'timeout' ) {
         body = {
           code: 'Timeout',
           status: xhr.status,
           message: `API request timeout (${opt.timeout/1000} sec)`,
           detail: (opt.method||'GET') + ' ' + opt.url,
         };
-      }
-      else
-      {
+      } else {
         body = {status: xhr.status, message: xhr.err};
       }
 
       return finish(body);
-    }
-    else if ( xhr.body && typeof xhr.body === 'object' )
-    {
+    } else if ( xhr.body && typeof xhr.body === 'object' ) {
       Ember.beginPropertyChanges();
       let out = finish(this._typeify(xhr.body));
       Ember.endPropertyChanges();
       return out;
-    }
-    else
-    {
-      body = {status: xhr.status, message: xhr.body};
+    } else {
+      body = {status: xhr.status, message: xhr.body || xhr.message};
       return finish(body);
     }
 
     function finish(body) {
-      if ( !ApiError.detectInstance(body) )
-      {
+      if ( !ApiError.detectInstance(body) ) {
         body = ApiError.create(body);
       }
 
@@ -737,7 +756,7 @@ var Store = Ember.Service.extend({
 
     Object.defineProperty(output, 'store', { value: this, configurable: true });
 
-    output.setProperties(Ember.getProperties(input, this.get('metaKeys')));
+    output.setProperties(Ember.getProperties(input, get(this, 'metaKeys')));
     Ember.endPropertyChanges();
     return output;
   },
