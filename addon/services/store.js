@@ -6,6 +6,7 @@ import { applyHeaders } from '../utils/apply-headers';
 import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from '../utils/url-options';
 import { get, set } from '@ember/object';
+import { reject } from 'rsvp';
 
 const { getOwner } = Ember;
 
@@ -251,8 +252,7 @@ var Store = Ember.Service.extend({
 
     let fastboot = get(this, 'fastboot');
     if ( fastboot && fastboot.isFastBoot ) {
-      console.log('[Fastboot]', opt.url);
-      opt.headers['cookie'] = get(fastboot, 'request.headers.cookie');
+      opt.headers['cookie'] = get(fastboot, 'request.headers').get('cookie');
     }
 
     opt.processData = false;
@@ -276,7 +276,21 @@ var Store = Ember.Service.extend({
       }
     }
 
-    return fetch(opt.url, opt);
+    const out = fetch(opt.url, opt);
+
+    if ( fastboot && fastboot.isFastBoot ) {
+      const method = opt.method || 'GET';
+
+      out.then((res) => {
+        console.log('[FB Req]', res.status, method, opt.url);
+        return res;
+      }).catch((err) => {
+        console.log('[FB Req]', err.status, method, opt.url);
+        return reject(err);
+      });
+    }
+
+    return out;
   },
 
   // Makes an AJAX request that resolves to a resource model
@@ -476,14 +490,18 @@ var Store = Ember.Service.extend({
 
     if ( xhr.err ) {
       if ( xhr.err === 'timeout' ) {
-        body = {
+        body = ApiError.create({
           code: 'Timeout',
           status: xhr.status,
           message: `API request timeout (${opt.timeout/1000} sec)`,
           detail: (opt.method||'GET') + ' ' + opt.url,
-        };
+        });
       } else {
-        body = {status: xhr.status, message: xhr.err};
+        body = ApiError.create({
+          code: 'Xhr',
+          status: xhr.status,
+          message: xhr.err
+        });
       }
 
       return finish(body);
@@ -491,9 +509,14 @@ var Store = Ember.Service.extend({
       Ember.beginPropertyChanges();
       let out = finish(this._typeify(xhr.body));
       Ember.endPropertyChanges();
+
       return out;
     } else {
-      body = {status: xhr.status, message: xhr.body || xhr.message};
+      body = ApiError.create({
+        status: xhr.status,
+        message: xhr.body || xhr.message,
+      });
+
       return finish(body);
     }
 
