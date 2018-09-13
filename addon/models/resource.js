@@ -149,7 +149,7 @@ var Resource = Actionable.extend(TypeMixin, {
         } else if ( field.type === 'dnsLabelRestricted' ) {
           validateDnsLabel(val, displayKey, intl, {restricted: true}, errors);
         } else if ( field.type === 'hostname') {
-          validateHostname(val, displayKey, intl, errors);
+          validateHostname(val, displayKey, intl, {restricted: false}, errors);
         }
       }
     }
