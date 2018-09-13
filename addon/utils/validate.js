@@ -119,10 +119,20 @@ export function validateChars(val, field, displayKey, intl, errors=[]) {
   return errors;
 }
 
-export function validateHostname(val, displayKey, intl, errors=[], max=253) {
+export function validateHostname(val, displayKey, intl, opts, errors=[]) {
+  opts = opts || {};
+
+  const max = opts.max || 253;
+  const restricted = opts.restricted || false;
+
   // Hostname can not start with a dot
   if (val.slice(0,1) ==='.'){
       errors.push(intl.t('validation.dns.hostname.startDot', {key: displayKey}));
+  }
+
+  // Hostname can not end with a dot in restricted mode
+  if ( restricted && val.length > 1 && val.slice(-1) ==='.' ) {
+    errors.push(intl.t('validation.dns.hostname.endDot', {key: displayKey}));
   }
 
   // Hostname can not be empty string
@@ -141,6 +151,11 @@ export function validateHostname(val, displayKey, intl, errors=[], max=253) {
   let label;
   for ( let i = 0 ; i < labels.length ; i++ ) {
     label = labels[i];
+    
+    // Already checked if Hostname starts with a dot
+    if ( i === 0 && label === "" ){
+      continue;
+    }
 
     // Hostname can end with a dot (this makes it an explicitly fully qualified domain name)
     // so the last element of the labels can be empty string.
