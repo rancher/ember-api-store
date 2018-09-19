@@ -7,6 +7,9 @@ import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from '../utils/url-options';
 import { get, set } from '@ember/object';
 import { reject } from 'rsvp';
+import { inject as service } from '@ember/service';
+import { isArray } from '@ember/array';
+import { parse as setCookieParser } from 'set-cookie-parser';
 
 const { getOwner } = Ember;
 
@@ -20,6 +23,8 @@ const ownerKey = getOwnerKey();
 export const defaultMetaKeys = ['actionLinks','createDefaults','createTypes','filters','links','pagination','resourceType','sort','sortLinks','type'];
 
 var Store = Ember.Service.extend({
+  cookies: service(),
+
   defaultTimeout: 30000,
   defaultPageSize: 1000,
   baseUrl: '/v1',
@@ -247,12 +252,20 @@ var Store = Ember.Service.extend({
   // Makes an AJAX request and returns a promise that resolves to an object
   // This is separate from request() so it can be mocked for tests, or if you just want a basic AJAX request.
   rawRequest(opt) {
+    const cookieSvc = get(this, 'cookies');
+
     opt.url = this.normalizeUrl(opt.url);
     opt.headers = this._headers(opt.headers);
 
     let fastboot = get(this, 'fastboot');
     if ( fastboot && fastboot.isFastBoot ) {
-      opt.headers['cookie'] = get(fastboot, 'request.headers').get('cookie');
+      const cookies = cookieSvc.read(null, {raw: true});
+      const ary = [];
+      Object.keys(cookies).forEach((k) => {
+        ary.push(`${ k }=${ cookies[k] }`);
+      });
+
+      opt.headers['cookie'] = ary.join('; ');
     }
 
     opt.processData = false;
@@ -282,15 +295,35 @@ var Store = Ember.Service.extend({
       const method = opt.method || 'GET';
 
       out.then((res) => {
+        copyCookies(res);
         console.log('[FB Req]', res.status, method, opt.url);
         return res;
       }).catch((err) => {
-        console.log('[FB Req]', err.status, method, opt.url);
+        copyCookies(err);
+        console.log('[FB Req Err]', err.status, method, opt.url);
         return reject(err);
       });
     }
 
     return out;
+
+    // Copy cookies from the request's response to the fastboot response
+    function copyCookies(obj) {
+      const headers = obj.headers.get('set-cookie');
+
+      if ( headers ) {
+        setCookieParser(headers).forEach((opts) => {
+          const name = opts.name;
+          const value = opts.value;
+
+          delete opts.name;
+          delete opts.value
+          opts.raw = true;
+
+          cookieSvc.write(name, value, opts);
+        });
+      }
+    }
   },
 
   // Makes an AJAX request that resolves to a resource model
@@ -684,7 +717,7 @@ var Store = Ember.Service.extend({
     }
 
     let type = Ember.get(input,'type');
-    if ( Ember.isArray(input) ) {
+    if ( isArray(input) ) {
       // Recurse over arrays
       return input.map(x => this._typeify(x, opt));
     } else if ( !type ) {
