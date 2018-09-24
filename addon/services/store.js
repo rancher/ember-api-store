@@ -294,13 +294,13 @@ var Store = Ember.Service.extend({
     if ( fastboot && fastboot.isFastBoot ) {
       const method = opt.method || 'GET';
 
-      out.then((res) => {
+      return out.then((res) => {
         copyCookies(res);
-        console.log('[FB Req]', res.status, method, opt.url);
+        console.log('[Fastboot Fetch]', method, opt.url, res.status);
         return res;
       }).catch((err) => {
         copyCookies(err);
-        console.log('[FB Req Err]', err.status, method, opt.url);
+        console.log('[Fastboot Fetch Error]', method, opt.url, err.status);
         return reject(err);
       });
     }
@@ -309,6 +309,10 @@ var Store = Ember.Service.extend({
 
     // Copy cookies from the request's response to the fastboot response
     function copyCookies(obj) {
+      if ( !obj || !obj.headers ) {
+        return;
+      }
+
       const headers = obj.headers.get('set-cookie');
 
       if ( headers ) {

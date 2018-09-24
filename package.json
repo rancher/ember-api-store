@@ -1,6 +1,6 @@
 {
   "name": "ember-api-store",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -30,7 +30,7 @@
     "ember-cli-qunit": "^4.3.2",
     "ember-cli-shims": "^1.2.0",
     "ember-cli-uglify": "^2.0.0",
-    "ember-cookies": "rancher/ember-cookies",
+    "ember-cookies": "rancher/ember-cookies#latest",
     "ember-disable-prototype-extensions": "^1.1.2",
     "ember-disable-proxy-controllers": "^1.0.1",
     "ember-export-application-global": "^2.0.0",
