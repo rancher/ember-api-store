@@ -31,7 +31,6 @@ var Store = Ember.Service.extend({
   metaKeys: null,
   replaceActions: 'actionLinks',
   dropKeys: null,
-  shoeboxName: null,
   headers: null,
 
   arrayProxyClass: Ember.ArrayProxy,
@@ -57,6 +56,7 @@ var Store = Ember.Service.extend({
     this._state = {
       cache: null,
       cacheMap: null,
+      shoebox: null,
       classCache: null,
       foundAll: null,
       findQueue: null,
@@ -78,8 +78,10 @@ var Store = Ember.Service.extend({
     let fastboot = get(this, 'fastboot');
     if ( fastboot ) {
       if ( fastboot.get('isFastBoot') ) {
+        const shoebox = this._state.shoebox = {};
+
         fastboot.get('shoebox').put(name, {
-          cache: this._state.cache,
+          shoebox: shoebox,
           foundAll: this._state.foundAll,
         });
       } else {
@@ -90,11 +92,11 @@ var Store = Ember.Service.extend({
           });
 
           let i;
-          Object.keys(box.cache || {}).forEach((type) => {
-            let list = box.cache[type];
-            for ( i = 0 ; i < list.length ; i++ ) {
-              this._typeify(list[i]);
-            }
+          Object.keys(box.shoebox || {}).forEach((type) => {
+            let map = box.shoebox[type];
+            Object.values(map).forEach((pojo) => {
+              this._typeify(pojo);
+            });
           });
         }
       }
@@ -348,7 +350,9 @@ var Store = Ember.Service.extend({
 
   // Forget about all the resources that hae been previously remembered.
   reset() {
-    var cache = this._state.cache;
+    const state = this._state;
+
+    var cache = state.cache;
     if ( cache ) {
       Object.keys(cache).forEach((key) => {
         if ( cache[key] && cache[key].clear ) {
@@ -356,24 +360,28 @@ var Store = Ember.Service.extend({
         }
       });
     } else {
-      this._state.cache = {};
+      state.cache = {};
     }
 
-    var foundAll = this._state.foundAll;
+    var foundAll = state.foundAll;
     if ( foundAll ) {
       Object.keys(foundAll).forEach((key) => {
         foundAll[key] = false;
       });
     } else {
-      this._state.foundAll = {};
+      state.foundAll = {};
     }
 
-    this._state.cacheMap = {};
-    this._state.findQueue = {};
-    this._state.classCache = [];
-    this._state.watchHasMany = {};
-    this._state.watchReference = {};
-    this._state.missingReference = {};
+    if ( state.shoebox ) {
+      state.shoebox = {};
+    }
+
+    state.cacheMap = {};
+    state.findQueue = {};
+    state.classCache = [];
+    state.watchHasMany = {};
+    state.watchReference = {};
+    state.missingReference = {};
     this.incrementProperty('generation');
   },
 
@@ -382,6 +390,11 @@ var Store = Ember.Service.extend({
     var group = this._group(type);
     this._state.foundAll[type] = false;
     this._state.cacheMap[type] = {};
+
+    if ( this._state.shoebox ) {
+      this._state.shoebox[type] = {};
+    }
+
     group.clear();
   },
 
@@ -596,15 +609,37 @@ var Store = Ember.Service.extend({
     return group;
   },
 
+  // Get the shoebox group for [type]
+  _shoebox(type) {
+    type = normalizeType(type, this);
+    var box = this._state.shoebox;
+    if ( !box ) {
+      return null;
+    }
+
+    var group = box[type];
+    if ( !group ) {
+      group = {};
+      box[type] = group;
+    }
+
+    return group;
+  },
+
   // Add a record instance of [type] to cache
   _add(type, obj) {
     type = normalizeType(type, this);
     const id = obj.id;
     const group = this._group(type);
     const groupMap = this._groupMap(type);
+    const shoebox = this._shoebox(type);
 
     group.pushObject(obj);
     groupMap[obj.id] = obj;
+
+    if ( shoebox ) {
+      shoebox[obj.id] = obj.serialize();
+    }
 
     // Update hasMany relationships
     const watches = this._state.watchHasMany[type]||[];
@@ -640,9 +675,10 @@ var Store = Ember.Service.extend({
   // Basically this is just for loading schemas faster.
   _bulkAdd(type, pojos) {
     type = normalizeType(type, this);
-    var group = this._group(type);
-    var groupMap = this._groupMap(type);
-    var cls = getOwner(this).lookup('model:'+type);
+    const group = this._group(type);
+    const groupMap = this._groupMap(type);
+    const shoebox = this._shoebox(type);
+    const cls = getOwner(this).lookup('model:'+type);
     group.pushObjects(pojos.map((input)=>  {
 
       // actions is very unhappy property name for Ember...
@@ -661,6 +697,11 @@ var Store = Ember.Service.extend({
       input.store = this;
       let obj =  cls.constructor.create(input);
       groupMap[obj.id] = obj;
+
+      if ( shoebox ) {
+        shoebox[obj._id || obj.id] = obj.serialize();
+      }
+
       return obj;
     }));
   },
@@ -671,9 +712,14 @@ var Store = Ember.Service.extend({
     const id = obj.id;
     const group = this._group(type);
     const groupMap = this._groupMap(type);
+    const shoebox = this._shoebox(type);
 
     group.removeObject(obj);
     delete groupMap[id];
+
+    if ( shoebox ) {
+      delete shoebox[id];
+    }
 
     // Update hasMany relationships that refer to this resource
     const watches = this._state.watchHasMany[type]||[];
