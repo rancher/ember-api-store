@@ -91,7 +91,6 @@ var Store = Ember.Service.extend({
             this._state.foundAll[key] = box.foundAll[key];
           });
 
-          let i;
           Object.keys(box.shoebox || {}).forEach((type) => {
             let map = box.shoebox[type];
             Object.values(map).forEach((pojo) => {
