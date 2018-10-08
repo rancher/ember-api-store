@@ -3633,13 +3633,6 @@ ember-browserify@^1.2.0:
     through2 "^2.0.0"
     walk-sync "^0.2.7"
 
-ember-cli-app-version@^3.0.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/ember-cli-app-version/-/ember-cli-app-version-3.2.0.tgz#7b9ad0e1b63ae0518648356ee24c703e922bc26e"
-  dependencies:
-    ember-cli-babel "^6.12.0"
-    git-repo-version "^1.0.2"
-
 ember-cli-babel@^5.0.0, ember-cli-babel@^5.1.3:
   version "5.2.4"
   resolved "https://registry.yarnpkg.com/ember-cli-babel/-/ember-cli-babel-5.2.4.tgz#5ce4f46b08ed6f6d21e878619fb689719d6e8e13"
@@ -3969,9 +3962,9 @@ ember-cli@~3.3.0:
     watch-detector "^0.1.0"
     yam "^0.0.24"
 
-ember-cookies@rancher/ember-cookies:
+ember-cookies@rancher/ember-cookies#latest:
   version "0.3.1"
-  resolved "https://codeload.github.com/rancher/ember-cookies/tar.gz/9c990e970dc5a2627ca36d4b660a6f4879e27da5"
+  resolved "https://codeload.github.com/rancher/ember-cookies/tar.gz/d96fe8227dfb2807883e408903bdeadead3e87f5"
   dependencies:
     ember-cli-babel "^7.1.0"
     ember-getowner-polyfill "^1.1.0 || ^2.0.0"
@@ -5032,19 +5025,9 @@ getpass@^0.1.1:
   dependencies:
     assert-plus "^1.0.0"
 
-git-repo-info@^1.4.1:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/git-repo-info/-/git-repo-info-1.4.1.tgz#2a072823254aaf62fcf0766007d7b6651bd41943"
-
 git-repo-info@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/git-repo-info/-/git-repo-info-2.0.0.tgz#2e7a68ba3d0253e8e885c4138f922e6561de59bb"
-
-git-repo-version@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/git-repo-version/-/git-repo-version-1.0.2.tgz#2c8e9bee5d970cafc0dd58480f9dc56d9afe8e4f"
-  dependencies:
-    git-repo-info "^1.4.1"
 
 glob-base@^0.3.0:
   version "0.3.0"
