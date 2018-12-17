@@ -2,12 +2,13 @@
 'use strict';
 
 var pkg         = require('./package.json');
-var merge       = require('broccoli-merge-trees');
-var createFile  = require('broccoli-file-creator');
+//var merge       = require('broccoli-merge-trees');
+//var createFile  = require('broccoli-file-creator');
 
 module.exports = {
   name: pkg.name,
 
+/*
   included() {
     this._super.included.apply(this, arguments);
     this._ensureThisImport();
@@ -40,4 +41,5 @@ module.exports = {
       };
     }
   }
+*/
 };
