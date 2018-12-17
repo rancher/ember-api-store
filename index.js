@@ -1,12 +1,12 @@
 /* eslint-env node */
 'use strict';
 
-var version = require('./package.json').version;
-var merge        = require('broccoli-merge-trees');
-var createFile   = require('broccoli-file-creator');
+var pkg         = require('./package.json');
+var merge       = require('broccoli-merge-trees');
+var createFile  = require('broccoli-file-creator');
 
 module.exports = {
-  name: 'ember-api-store',
+  name: pkg.name,
 
   included() {
     this._super.included.apply(this, arguments);
@@ -15,7 +15,7 @@ module.exports = {
   },
 
   treeForVendor() {
-    var content = "Ember.libraries.register('Ember API Store', '" + version + "');";
+    var content = "Ember.libraries.register('Ember API Store', '" + pkg.version + "');";
     var registerVersionTree = createFile(
       'ember-api-store/register-version.js',
       content
