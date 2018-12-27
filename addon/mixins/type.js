@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import { get } from '@ember/object';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
 import { copyHeaders } from '../utils/apply-headers';
@@ -10,22 +11,19 @@ var Type = Ember.Mixin.create(Serializable,{
   links: null,
 
   toString: function() {
-    return '(generic type mixin)';
+    return '(generic store type mixin)';
   },
 
   // unionArrays=true will append the new values to the existing ones instead of overwriting.
-  merge: function(newData, unionArrays) {
+  merge: function(newData, unionArrays=false) {
     var self = this;
+
     newData.eachKeys(function(v, k) {
-      if ( newData.hasOwnProperty(k) )
-      {
+      if ( newData.hasOwnProperty(k) ) {
         var curVal = self.get(k);
-        if ( unionArrays && Ember.isArray(curVal) && Ember.isArray(v) )
-        {
+        if ( unionArrays && Ember.isArray(curVal) && Ember.isArray(v) ) {
           curVal.addObjects(v);
-        }
-        else
-        {
+        } else {
           self.set(k, v);
         }
       }
@@ -45,8 +43,7 @@ var Type = Ember.Mixin.create(Serializable,{
     var newKeys = newData.allKeys();
     this.eachKeys(function(v, k) {
       // If the key is a valid link name and
-      if ( newKeys.indexOf(k) === -1 && !this.hasLink(k) )
-      {
+      if ( newKeys.indexOf(k) === -1 && !this.hasLink(k) ) {
         self.set(k, undefined);
       }
     });
@@ -55,19 +52,19 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   clone: function() {
-    let store = this.get('store');
+    let store = get(this, 'store');
     let output = store.createRecord(JSON.parse(JSON.stringify(this.serialize())), {updateStore: false});
-    //output.set('store', this.get('store'));
+    //output.set('store', get(this, 'store'));
     return output;
   },
 
   linkFor: function(name) {
-    var url = this.get('links.'+name);
+    var url = get(this, 'links.'+name);
     return url;
   },
 
-  pageFor: function(name) {
-    return this.get(`pagination.${name}`);
+  pageFor: function(which) {
+    return get(this, `pagination.${which}`);
   },
 
   hasLink: function(name) {
@@ -76,65 +73,45 @@ var Type = Ember.Mixin.create(Serializable,{
 
   headers: null,
   request: function(opt) {
-    if ( !opt.headers )
-    {
+    if ( !opt.headers ) {
       opt.headers = {};
     }
 
     copyHeaders(this.constructor.headers, opt.headers);
-    copyHeaders(this.get('headers'), opt.headers);
+    copyHeaders(get(this, 'headers'), opt.headers);
 
-    return this.get('store').request(opt);
+    return get(this, 'store').request(opt);
   },
 
-  followPagination: function(name) {
-    var url = this.pageFor(name);
+  followPagination: function(which, opt) {
+    var url = this.pageFor(which);
 
-    if (!url)
-    {
+    if (!url) {
       throw new Error('Unknown link');
     }
 
-    return this.request({
-      method: 'GET',
-      url: url,
-      depaginate: false,
-    });
+    opt = opt || {};
+    opt.url = url;
+    opt.depaginate = false;
+
+    return this.request(opt);
   },
 
   followLink: function(name, opt) {
     var url = this.linkFor(name);
     opt = opt || {};
 
-    if (!url)
-    {
+    if (!url) {
       throw new Error('Unknown link');
     }
 
-    url = urlOptions(url, opt);
+    opt.url = urlOptions(url, opt);
 
-    return this.request({
-      method: 'GET',
-      url: url
-    });
-  },
-
-  importLink: function(name, opt) {
-    var self = this;
-    opt = opt || {};
-
-    return new Ember.RSVP.Promise(function(resolve,reject) {
-      self.followLink(name, opt).then(function(data) {
-        self.set(opt.as||name,data);
-        resolve(self);
-      }).catch(function(err) {
-        reject(err);
-      });
-    },'Import Link: '+name);
+    return this.request(opt);
   },
 
   hasAction: function(name) {
-    var url = this.get('actionLinks.'+name);
+    var url = get(this, 'actionLinks.'+name);
     return !!url;
   },
 
@@ -145,17 +122,15 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   doAction: function(name, data, opt) {
-    var url = this.get('actionLinks.'+name);
-    if (!url)
-    {
+    var url = get(this, 'actionLinks.'+name);
+    if (!url) {
       return Ember.RSVP.reject(new Error('Unknown action: ' + name));
     }
 
     opt = opt || {};
     opt.method = 'POST';
     opt.url = opt.url || url;
-    if ( data )
-    {
+    if ( data ) {
       opt.data = data;
     }
 
@@ -165,22 +140,18 @@ var Type = Ember.Mixin.create(Serializable,{
 
   save: function(opt) {
     var self = this;
-    var store = this.get('store');
+    var store = get(this, 'store');
     opt = opt || {};
 
-    var id = this.get('id');
-    var type = normalizeType(this.get('type'));
-    if ( id )
-    {
+    var id = get(this, 'id');
+    var type = normalizeType(get(this, 'type'));
+    if ( id ) {
       // Update
       opt.method = opt.method || 'PUT';
       opt.url = opt.url || this.linkFor('self');
-    }
-    else
-    {
+    } else {
       // Create
-      if ( !type )
-      {
+      if ( !type ) {
         return Ember.RSVP.reject(new Error('Cannot create record without a type'));
       }
 
@@ -200,43 +171,36 @@ var Type = Ember.Mixin.create(Serializable,{
     delete json['actions'];
     delete json['actionLinks'];
 
-    if ( typeof opt.data === 'undefined' )
-    {
+    if ( typeof opt.data === 'undefined' ) {
       opt.data = json;
     }
 
     return this.request(opt).then(function(newData) {
-      if ( !newData || !Type.detect(newData) )
-      {
+      if ( !newData || !Type.detect(newData) ) {
         return newData;
       }
 
       var newId = newData.get('id');
       var newType = normalizeType(newData.get('type'));
-      if ( !id && newId && type === newType )
-      {
+      if ( !id && newId && type === newType ) {
         Ember.beginPropertyChanges();
 
         // A new record was created.  Typeify will have put it into the store,
         // but it's not the same instance as this object.  So we need to fix that.
         self.merge(newData);
         var existing = store.getById(type,newId);
-        if ( existing )
-        {
+        if ( existing ) {
           store._remove(type, existing);
         }
         store._add(type, self);
 
         // And also for the base type
         var baseType = self.get('baseType');
-        if ( baseType )
-        {
+        if ( baseType ) {
           baseType = normalizeType(baseType);
-          if ( baseType !== type )
-          {
+          if ( baseType !== type ) {
             existing = store.getById(baseType,newId);
-            if ( existing )
-            {
+            if ( existing ) {
               store._remove(baseType, existing);
             }
             store._add(baseType, self);
@@ -252,8 +216,8 @@ var Type = Ember.Mixin.create(Serializable,{
 
   delete: function(opt) {
     var self = this;
-    var store = this.get('store');
-    var type = this.get('type');
+    var store = get(this, 'store');
+    var type = get(this, 'type');
 
     opt = opt || {};
     opt.method = 'DELETE';
@@ -268,21 +232,18 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   reload: function(opt) {
-    if ( !this.hasLink('self') )
-    {
+    if ( !this.hasLink('self') ) {
       return Ember.RSVP.reject('Resource has no self link');
     }
 
     var url = this.linkFor('self');
 
     opt = opt || {};
-    if ( typeof opt.method === 'undefined' )
-    {
+    if ( typeof opt.method === 'undefined' ) {
       opt.method = 'GET';
     }
 
-    if ( typeof opt.url === 'undefined' )
-    {
+    if ( typeof opt.url === 'undefined' ) {
       opt.url = url;
     }
 
@@ -293,8 +254,8 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   isInStore: function() {
-    var store = this.get('store');
-    return store && this.get('id') && this.get('type') && store.hasRecord(this);
+    var store = get(this, 'store');
+    return store && get(this, 'id') && get(this, 'type') && store.hasRecord(this);
   }
 });
 
