@@ -44,7 +44,11 @@ function _getReference(store, referencedType, referencedId, thisType, thisId, co
   return null;
 }
 
-export function reference(field=null, referencedType=null, storeName="store") {
+export function reference(field, referencedType=null, storeName="store") {
+  if ( !field ) {
+    throw new Error('reference must specify the field that it refers to');
+  }
+
   if (!referencedType ) {
     referencedType = field.replace(/Id$/,'');
   }
