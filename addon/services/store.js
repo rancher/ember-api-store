@@ -3,12 +3,12 @@ import Serializable from '../mixins/serializable';
 import ApiError from '../models/error';
 import { normalizeType } from '../utils/normalize';
 import { applyHeaders } from '../utils/apply-headers';
-import fetch from 'ember-api-store/utils/fetch';
 import { urlOptions } from '../utils/url-options';
 import { get, set } from '@ember/object';
 import { reject } from 'rsvp';
 import { inject as service } from '@ember/service';
 import { isArray } from '@ember/array';
+import fetch from '@rancher/ember-api-store/utils/fetch';
 import { parse as setCookieParser } from 'set-cookie-parser';
 
 const { getOwner } = Ember;

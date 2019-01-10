@@ -1,5 +1,5 @@
 import Ember from 'ember';
-import VERSION from 'ember-api-store/version';
+import VERSION from '@rancher/ember-api-store/version';
 
 const EmberApiStore = Ember.Namespace.create({
   VERSION

@@ -622,6 +622,14 @@
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.stat/-/fs.stat-1.1.3.tgz#2b5a3ab3f918cca48a8c754c08168e3f03eba61b"
 
+"@rancher/ember-cookies@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@rancher/ember-cookies/-/ember-cookies-0.3.2.tgz#69e4637362cdae537ae935172248da734fe51a63"
+  integrity sha512-imQcWH0HFvAZ/G3/urq5dnGf1OhKXQwcRJtwHbVS8EHwjJiVq4bzYrc/UvMIFtjUandZKQdjPrvs7oNOR08uSA==
+  dependencies:
+    ember-cli-babel "^6.18.0"
+    ember-getowner-polyfill "^1.1.0 || ^2.0.0"
+
 "@simple-dom/document@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@simple-dom/document/-/document-1.4.0.tgz#af60855f957f284d436983798ef1006cca1a1678"
@@ -3165,7 +3173,7 @@ ember-cli-app-version@^3.2.0:
     ember-cli-babel "^6.12.0"
     git-repo-version "^1.0.2"
 
-ember-cli-babel@^6.0.0-beta.4, ember-cli-babel@^6.0.0-beta.7, ember-cli-babel@^6.12.0, ember-cli-babel@^6.6.0, ember-cli-babel@^6.8.1, ember-cli-babel@^6.8.2:
+ember-cli-babel@^6.0.0-beta.4, ember-cli-babel@^6.0.0-beta.7, ember-cli-babel@^6.12.0, ember-cli-babel@^6.18.0, ember-cli-babel@^6.6.0, ember-cli-babel@^6.8.1, ember-cli-babel@^6.8.2:
   version "6.18.0"
   resolved "https://registry.yarnpkg.com/ember-cli-babel/-/ember-cli-babel-6.18.0.tgz#3f6435fd275172edeff2b634ee7b29ce74318957"
   dependencies:
@@ -3183,7 +3191,7 @@ ember-cli-babel@^6.0.0-beta.4, ember-cli-babel@^6.0.0-beta.7, ember-cli-babel@^6
     ember-cli-version-checker "^2.1.2"
     semver "^5.5.0"
 
-ember-cli-babel@^7.1.0, ember-cli-babel@^7.1.2, ember-cli-babel@^7.1.3:
+ember-cli-babel@^7.1.0, ember-cli-babel@^7.1.3:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/ember-cli-babel/-/ember-cli-babel-7.2.0.tgz#5c5bd877fb73f6fb198c878d3127ba9e18e9b8a0"
   dependencies:
@@ -3451,13 +3459,6 @@ ember-cli@~3.6.0:
     walk-sync "^0.3.2"
     watch-detector "^0.1.0"
     yam "^0.0.24"
-
-ember-cookies@rancher/ember-cookies#latest:
-  version "0.3.1"
-  resolved "https://codeload.github.com/rancher/ember-cookies/tar.gz/d96fe8227dfb2807883e408903bdeadead3e87f5"
-  dependencies:
-    ember-cli-babel "^7.1.0"
-    ember-getowner-polyfill "^1.1.0 || ^2.0.0"
 
 ember-export-application-global@^2.0.0:
   version "2.0.0"
