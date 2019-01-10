@@ -41,7 +41,7 @@ var Serializable = Ember.Mixin.create({
       }
       else if ( Serializable.detect(obj) )
       {
-        return obj.serialize(depth+1);
+        return obj.serialize(depth);
       }
       else if ( obj && typeof obj === 'object' )
       {
