@@ -1,6 +1,6 @@
 {
   "name": "@rancher/ember-api-store",
-  "version": "2.8.7",
+  "version": "2.9.0",
   "directories": {
     "doc": "doc",
     "test": "tests"

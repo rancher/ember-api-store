@@ -51,7 +51,7 @@ var Resource = Actionable.extend(TypeMixin, {
     return schema;
   }.property('type'),
 
-  validationErrors() {
+  validationErrors(ignoreFields) {
     const intl = this.get('intl');
 
     const errors = [];
@@ -74,23 +74,35 @@ var Resource = Actionable.extend(TypeMixin, {
 
     const fields = schema.resourceFields||{};
     const keys = Object.keys(fields);
-    let field, key, val, displayKey;
+    let field, key, val, displayKey, match;
     for ( let i = 0 ; i < keys.length ; i++ ) {
       key = keys[i];
       field = fields[key];
       val = get(this, key);
       displayKey = displayKeyFor(type, key, intl);
 
+      if ( ignoreFields && ignoreFields.includes(key) ) {
+        continue;
+      }
+
       if ( val === undefined ) {
         val = null;
       }
 
-      if ( field.type.indexOf('[') >= 0 ) {
+      match = field.type.match(/^array\[(.*)\]$/);
+      if ( match && match.length && match[1].indexOf('[') === -1 && val && isArray(val) && val.length ) {
+        // Plain array
+        val.forEach((item) => {
+          if ( typeof item.validationErrors === 'function' ) {
+            errors.pushObjects(item.validationErrors(ignoreFields));
+          }
+        });
+      } else if ( field.type.indexOf('[') >= 0 ) {
         // array, map, reference
         // @TODO something...
       } else if ( val && typeof val.validationErrors === 'function' ) {
         // embedded schema type
-        errors.pushObjects(val.validationErrors());
+        errors.pushObjects(val.validationErrors(ignoreFields));
       } else if ( field.type === 'float' && typeof val === 'string' ) {
         // Coerce strings to floats
         val = parseFloat(val) || null; // NaN becomes null
@@ -136,6 +148,7 @@ var Resource = Actionable.extend(TypeMixin, {
       validateLength(val, field, displayKey, intl, errors);
       validateChars( val, field, displayKey, intl, errors);
 
+      // IDs claim to be these but are lies...
       if ( (key !== 'id') && len && (field.type === 'dnsLabel' || field.type === 'dnsLabelRestricted' || field.type === 'hostname') ) {
         // DNS types should be lowercase
         const tolower = (val||'').toLowerCase();
