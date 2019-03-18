@@ -1,6 +1,6 @@
 import Ember from 'ember';
 import TypeMixin from '../mixins/type';
-import { set, get } from '@ember/object';
+import { set, get, computed, } from '@ember/object';
 import { isArray } from '@ember/array';
 import { displayKeyFor, validateLength, validateChars, validateHostname, validateDnsLabel } from '../utils/validate';
 import { normalizeType } from '../utils/normalize';
@@ -46,10 +46,10 @@ var Resource = Actionable.extend(TypeMixin, {
     return data;
   },
 
-  schema: function() {
+  schema: computed('type', function() {
     const schema = this.get('store').getById('schema', this.get('type'));
     return schema;
-  }.property('type'),
+  }),
 
   validationErrors(ignoreFields) {
     const intl = this.get('intl');

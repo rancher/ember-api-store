@@ -1,6 +1,6 @@
 import Resource from './resource';
 import { normalizeType } from '../utils/normalize';
-import { get, set } from '@ember/object';
+import { get, set, computed } from '@ember/object';
 
 export const SCHEMA = {
   SIMPLE: ['string','password','masked','multiline','float','int','date','blob','boolean','enum','reference','json','dnsLabel','hostname','dnsLabelRestricted'],
@@ -16,7 +16,7 @@ var Schema = Resource.extend({
     return Object.keys(get(this, 'resourceFields'));
   },
 
-  typeifyFields: function() {
+  typeifyFields: computed('id', function() {
     // Schemas are special..
     if ( get(this, 'id') === 'schema' ) {
       return [];
@@ -37,7 +37,7 @@ var Schema = Resource.extend({
     });
 
     return out;
-  }.property(),
+  }),
 
   getLoadDefaults(record, forceOverwrite=false) {
     var fields = get(this, 'resourceFields');
