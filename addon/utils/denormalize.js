@@ -105,7 +105,7 @@ export function hasMany(matchField, targetType, targetField, storeName="store", 
       if ( sourceStoreName ) {
         sourceStore = this.get(sourceStoreName);
       }
-      const thisType = normalizeType(this.get('type'));
+      const thisType = normalizeType(this.get('type'), store);
 
       let watch = store._state.watchHasMany[targetType];
       if ( !watch ) {
