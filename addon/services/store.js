@@ -165,6 +165,15 @@ var Store = Ember.Service.extend({
     var isCacheable = this.isCacheable(opt);
     opt.isForAll = !id && isCacheable;
 
+    const cls = this.getClassFor(type);
+
+    if ( cls && cls.constructor.addFilters ) {
+      opt.filter = opt.filter || {};
+      Object.keys(cls.constructor.addFilters).forEach((key) => {
+        opt.filter[key] = cls.constructor.addFilters[key];
+      });
+    }
+
     // See if we already have this resource, unless forceReload is on.
     if ( opt.forceReload !== true ) {
       if ( opt.isForAll && this._state.foundAll[type] ) {
