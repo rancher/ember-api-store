@@ -1,7 +1,7 @@
 import Ember from 'ember';
 import { normalizeType } from '../utils/normalize';
 
-function _getReference(store, referencedType, referencedId, thisType, thisId, computedKey) {
+function _getReference(store, referencedType, referencedId, thisType, thisId, computedKey, sourceStore) {
   const watchKey = referencedType+':'+referencedId;
 
   if ( !referencedId ) {
@@ -20,7 +20,8 @@ function _getReference(store, referencedType, referencedId, thisType, thisId, co
   list.push({
     type: thisType,
     id: thisId,
-    field: computedKey
+    field: computedKey,
+    sourceStore: sourceStore
   });
 
   if ( result ) {
@@ -38,7 +39,8 @@ function _getReference(store, referencedType, referencedId, thisType, thisId, co
   list.push({
     type: thisType,
     id: thisId,
-    field: computedKey
+    field: computedKey,
+    sourceStore: sourceStore
   });
 
   return null;
@@ -60,7 +62,7 @@ export function reference(field, referencedType=null, storeName="store") {
       const thisId = this.get('id');
       const referencedId = this.get(field);
 
-      return _getReference(store, referencedType, referencedId, thisType, thisId, computedKey);
+      return _getReference(store, referencedType, referencedId, thisType, thisId, computedKey, this.store);
     }
   });
 }
@@ -81,7 +83,7 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
       const out = [];
       let entry;
       for ( let i = 0 ; i < idArray.get('length') ; i++ ) {
-        entry = _getReference(store, referencedType, idArray.objectAt(i), thisType, thisId, computedKey);
+        entry = _getReference(store, referencedType, idArray.objectAt(i), thisType, thisId, computedKey, this.store);
         if ( entry ) {
           out.push(entry);
         }
