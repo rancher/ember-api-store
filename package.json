@@ -1,6 +1,6 @@
 {
   "name": "@rancher/ember-api-store",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -56,6 +56,9 @@
     "eslint": "^4.19.1",
     "node-fetch": "^2.3.0",
     "set-cookie-parser": "^2.2.1"
+  },
+  "peerDependencies": {
+    "ember-fetch": "^6.5.1"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"
