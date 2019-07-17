@@ -130,7 +130,7 @@ var Store = Ember.Service.extend({
 
   hasType(name) {
     var type = normalizeType(name, this);
-    var group = this._groupMap(type);
+    var group = this._groupMap(type, false);
     return !!group;
   },
 
@@ -595,12 +595,12 @@ var Store = Ember.Service.extend({
   },
 
   // Get the cache map group for [type]
-  _groupMap(type) {
+  _groupMap(type, autoCreate=true) {
     type = normalizeType(type, this);
     var cache = this._state.cacheMap;
     var group = cache[type];
-    if ( !group )
-    {
+
+    if ( !group && autoCreate ) {
       group = {};
       cache[type] = group;
     }
