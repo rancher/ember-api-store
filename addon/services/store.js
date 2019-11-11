@@ -130,7 +130,7 @@ var Store = Ember.Service.extend({
 
   hasType(name) {
     var type = normalizeType(name, this);
-    var group = this._groupMap(type);
+    var group = this._groupMap(type, false);
     return !!group;
   },
 
