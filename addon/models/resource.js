@@ -61,7 +61,7 @@ var Resource = Actionable.extend(TypeMixin, {
       return [];
     }
 
-    const type = normalizeType(originalType);
+    const type = normalizeType(originalType, this.get('store'));
     const schema = this.get('store').getById('schema', type);
 
     if ( !schema ) {

@@ -144,7 +144,7 @@ var Type = Ember.Mixin.create(Serializable,{
     opt = opt || {};
 
     var id = get(this, 'id');
-    var type = normalizeType(get(this, 'type'));
+    var type = normalizeType(get(this, 'type'), store);
     if ( id ) {
       // Update
       opt.method = opt.method || 'PUT';
@@ -181,7 +181,7 @@ var Type = Ember.Mixin.create(Serializable,{
       }
 
       var newId = newData.get('id');
-      var newType = normalizeType(newData.get('type'));
+      var newType = normalizeType(newData.get('type'), store);
       if ( !id && newId && type === newType ) {
         Ember.beginPropertyChanges();
 
@@ -197,7 +197,7 @@ var Type = Ember.Mixin.create(Serializable,{
         // And also for the base type
         var baseType = self.get('baseType');
         if ( baseType ) {
-          baseType = normalizeType(baseType);
+          baseType = normalizeType(baseType, store);
           if ( baseType !== type ) {
             existing = store.getById(baseType,newId);
             if ( existing ) {

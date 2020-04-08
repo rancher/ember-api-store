@@ -27,7 +27,7 @@ export default Ember.ArrayProxy.extend(TypeMixin, {
       opt.headers = {};
     }
 
-    var cls = getOwner(store).lookup('model:'+normalizeType(this.get('resourceType')));
+    var cls = getOwner(store).lookup('model:'+normalizeType(this.get('resourceType'), store));
 
     if ( cls && cls.constructor.headers ) {
       copyHeaders(cls.constructor.headers, opt.headers);
