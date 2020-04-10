@@ -35,10 +35,11 @@ export function validateLength(val, field, displayKey, intl, errors=[]) {
   }
 
   if (
+    !field.nullable &&
     field.required &&
     ( val === null ||
       (typeof val === 'string' && len === 0) ||
-      (isArray(val) && len === 0) 
+      (isArray(val) && len === 0)
     )
   ) {
     errors.push(intl.t('validation.required', {key: displayKey}));
@@ -151,7 +152,7 @@ export function validateHostname(val, displayKey, intl, opts, errors=[]) {
   let label;
   for ( let i = 0 ; i < labels.length ; i++ ) {
     label = labels[i];
-    
+
     // Already checked if Hostname starts with a dot
     if ( i === 0 && label === "" ){
       continue;
