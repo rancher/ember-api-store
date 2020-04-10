@@ -35,10 +35,7 @@ export function validateLength(val, field, displayKey, intl, errors=[]) {
   }
 
   if (
-    (
-      !field.nullable &&
-        val === null
-    ) &&
+    !field.nullable &&
     field.required &&
     ( val === null ||
       (typeof val === 'string' && len === 0) ||
