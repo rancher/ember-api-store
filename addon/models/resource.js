@@ -134,6 +134,10 @@ var Resource = Actionable.extend(TypeMixin, {
       }
 
       if (
+        (
+          !field.nullable &&
+            val === null
+        ) &&
         field.required &&
         (
           val === null ||
