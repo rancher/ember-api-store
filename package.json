@@ -54,7 +54,7 @@
     "ember-auto-import": "^1.5.3",
     "ember-cli-babel": "^7.1.2",
     "eslint": "^4.19.1",
-    "node-fetch": "^2.3.0",
+    "node-fetch": "^2.6.1",
     "set-cookie-parser": "^2.2.1"
   },
   "peerDependencies": {
