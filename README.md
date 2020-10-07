@@ -3,7 +3,17 @@ Ember API Store
 
 Storage adapter for [Ember](http://emberjs.com) to [compatible APIs](http://github.com/rancher/api-spec).
 
-## Installation
+
+Compatibility
+------------------------------------------------------------------------------
+
+* Ember.js v3.12 or above
+* Ember CLI v2.13 or above
+* Node.js v10 or above
+
+
+Installation
+------------------------------------------------------------------------------
 
 When using ember-cli >= 0.2.3, run the following command from inside your ember-cli project:
 
