@@ -1,7 +1,8 @@
+import Namespace from '@ember/application/namespace';
 import Ember from 'ember';
 import VERSION from '@rancher/ember-api-store/version';
 
-const EmberApiStore = Ember.Namespace.create({
+const EmberApiStore = Namespace.create({
   VERSION
 });
 

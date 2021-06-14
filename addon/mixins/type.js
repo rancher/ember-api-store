@@ -1,11 +1,14 @@
+import { reject } from 'rsvp';
+import { isArray } from '@ember/array';
+import Mixin from '@ember/object/mixin';
 import Ember from 'ember';
-import { get } from '@ember/object';
+import { get, computed } from '@ember/object';
 import Serializable from './serializable';
 import { normalizeType } from '../utils/normalize';
 import { copyHeaders } from '../utils/apply-headers';
 import { urlOptions } from '../utils/url-options';
 
-var Type = Ember.Mixin.create(Serializable,{
+var Type = Mixin.create(Serializable,{
   id: null,
   type: null,
   links: null,
@@ -21,7 +24,7 @@ var Type = Ember.Mixin.create(Serializable,{
     newData.eachKeys(function(v, k) {
       if ( newData.hasOwnProperty(k) ) {
         var curVal = self.get(k);
-        if ( unionArrays && Ember.isArray(curVal) && Ember.isArray(v) ) {
+        if ( unionArrays && isArray(curVal) && isArray(v) ) {
           curVal.addObjects(v);
         } else {
           self.set(k, v);
@@ -52,7 +55,7 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   clone: function() {
-    let store = get(this, 'store');
+    let store = this.store;
     let output = store.createRecord(JSON.parse(JSON.stringify(this.serialize())), {updateStore: false});
     //output.set('store', get(this, 'store'));
     return output;
@@ -78,9 +81,9 @@ var Type = Ember.Mixin.create(Serializable,{
     }
 
     copyHeaders(this.constructor.headers, opt.headers);
-    copyHeaders(get(this, 'headers'), opt.headers);
+    copyHeaders(this.headers, opt.headers);
 
-    return get(this, 'store').request(opt);
+    return this.store.request(opt);
   },
 
   followPagination: function(which, opt) {
@@ -116,7 +119,7 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   computedHasAction: function(name) {
-    return Ember.computed('actionLinks.'+name, function() {
+    return computed('actionLinks.'+name, function() {
       return this.hasAction(name);
     });
   },
@@ -124,7 +127,7 @@ var Type = Ember.Mixin.create(Serializable,{
   doAction: function(name, data, opt) {
     var url = get(this, 'actionLinks.'+name);
     if (!url) {
-      return Ember.RSVP.reject(new Error('Unknown action: ' + name));
+      return reject(new Error('Unknown action: ' + name));
     }
 
     opt = opt || {};
@@ -140,11 +143,11 @@ var Type = Ember.Mixin.create(Serializable,{
 
   save: function(opt) {
     var self = this;
-    var store = get(this, 'store');
+    var store = this.store;
     opt = opt || {};
 
-    var id = get(this, 'id');
-    var type = normalizeType(get(this, 'type'), store);
+    var id = this.id;
+    var type = normalizeType(this.type, store);
     if ( id ) {
       // Update
       opt.method = opt.method || 'PUT';
@@ -152,7 +155,7 @@ var Type = Ember.Mixin.create(Serializable,{
     } else {
       // Create
       if ( !type ) {
-        return Ember.RSVP.reject(new Error('Cannot create record without a type'));
+        return reject(new Error('Cannot create record without a type'));
       }
 
       opt.method = opt.method || 'POST';
@@ -216,8 +219,8 @@ var Type = Ember.Mixin.create(Serializable,{
 
   delete: function(opt) {
     var self = this;
-    var store = get(this, 'store');
-    var type = get(this, 'type');
+    var store = this.store;
+    var type = this.type;
 
     opt = opt || {};
     opt.method = 'DELETE';
@@ -233,7 +236,7 @@ var Type = Ember.Mixin.create(Serializable,{
 
   reload: function(opt) {
     if ( !this.hasLink('self') ) {
-      return Ember.RSVP.reject('Resource has no self link');
+      return reject('Resource has no self link');
     }
 
     var url = this.linkFor('self');
@@ -254,8 +257,8 @@ var Type = Ember.Mixin.create(Serializable,{
   },
 
   isInStore: function() {
-    var store = get(this, 'store');
-    return store && get(this, 'id') && get(this, 'type') && store.hasRecord(this);
+    var store = this.store;
+    return store && this.id && this.type && store.hasRecord(this);
   }
 });
 

@@ -1,8 +1,9 @@
-import Ember from 'ember';
+import $ from 'jquery';
+import { Promise } from 'rsvp';
 
 export function ajaxPromise(opt, justBody) {
-  var promise = new Ember.RSVP.Promise(function(resolve,reject) {
-    Ember.$.ajax(opt).then(success,fail);
+  var promise = new Promise(function(resolve,reject) {
+    $.ajax(opt).then(success,fail);
 
     function success(body, textStatus, xhr) {
       if ( justBody === true )

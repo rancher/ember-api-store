@@ -1,4 +1,4 @@
-import Ember from 'ember';
+import { get } from '@ember/object';
 
 // Copy the headers from `more` into the object `dest`
 // including ones with a value of undefined, so they
@@ -10,7 +10,7 @@ export function copyHeaders(more, dest) {
   }
 
   Object.keys(more).forEach(function(key) {
-    var val = Ember.get(more, key);
+    var val = get(more, key);
     var normalizedKey = key.toLowerCase();
     dest[normalizedKey] = val;
   });
@@ -24,7 +24,7 @@ export function applyHeaders(more, dest, copyUndefined) {
   }
 
   Object.keys(more).forEach(function(key) {
-    var val = Ember.get(more, key);
+    var val = get(more, key);
     var normalizedKey = key.toLowerCase();
     if ( val === undefined && copyUndefined !== true )
     {

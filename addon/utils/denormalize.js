@@ -1,4 +1,4 @@
-import Ember from 'ember';
+import { computed } from '@ember/object';
 import { normalizeType } from '../utils/normalize';
 
 function _getReference(store, referencedType, referencedId, thisType, thisId, computedKey, sourceStore) {
@@ -55,11 +55,11 @@ export function reference(field, referencedType=null, storeName="store") {
     referencedType = field.replace(/Id$/,'');
   }
 
-  return Ember.computed(field, {
+  return computed(field, {
     get(computedKey) {
       const store = this.get(storeName);
-      const thisType = this.get('type');
-      const thisId = this.get('id');
+      const thisType = this.type;
+      const thisId = this.id;
       const referencedId = this.get(field);
 
       return _getReference(store, referencedType, referencedId, thisType, thisId, computedKey, this.store);
@@ -73,11 +73,11 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
     referencedType = field.replace(/Id$/,'');
   }
 
-  return Ember.computed(field+'.[]', {
+  return computed(field+'.[]', {
     get(computedKey) {
       const store = this.get(storeName);
-      const thisType = this.get('type');
-      const thisId = this.get('id');
+      const thisType = this.type;
+      const thisId = this.id;
       const idArray = this.get(field)||[];
 
       const out = [];
@@ -98,14 +98,14 @@ export function arrayOfReferences(field=null, referencedType=null, storeName="st
 export function hasMany(matchField, targetType, targetField, storeName="store", additionalFilter=null, sourceStoreName=null) {
   targetType = normalizeType(targetType);
 
-  return Ember.computed({
+  return computed({
     get(computedKey) {
       let store = this.get(storeName);
       let sourceStore;
       if ( sourceStoreName ) {
         sourceStore = this.get(sourceStoreName);
       }
-      const thisType = normalizeType(this.get('type'), store);
+      const thisType = normalizeType(this.type, store);
 
       let watch = store._state.watchHasMany[targetType];
       if ( !watch ) {

@@ -1,8 +1,14 @@
 import Ember from 'ember';
 import TypeMixin from '../mixins/type';
-import { set, get, computed, } from '@ember/object';
+import EmberObject, { set, get, computed } from '@ember/object';
 import { isArray } from '@ember/array';
-import { displayKeyFor, validateLength, validateChars, validateHostname, validateDnsLabel } from '../utils/validate';
+import {
+  displayKeyFor,
+  validateLength,
+  validateChars,
+  validateHostname,
+  validateDnsLabel
+} from '../utils/validate';
 import { normalizeType } from '../utils/normalize';
 
 const STRING_LIKE_TYPES = [
@@ -17,7 +23,7 @@ const STRING_LIKE_TYPES = [
   'hostname',
 ];
 
-var Actionable = Ember.Object.extend(Ember.ActionHandler);
+var Actionable = EmberObject.extend(Ember.ActionHandler);
 var Resource = Actionable.extend(TypeMixin, {
   // You should probably override intl with a real translator...
   intl: {
@@ -27,8 +33,8 @@ var Resource = Actionable.extend(TypeMixin, {
   },
 
   toString() {
-    let str = 'resource:'+this.get('type');
-    const id = this.get('id');
+    let str = 'resource:'+this.type;
+    const id = this.id;
 
     if ( id ) {
       str += ':' + id;
@@ -47,22 +53,22 @@ var Resource = Actionable.extend(TypeMixin, {
   },
 
   schema: computed('type', function() {
-    const schema = this.get('store').getById('schema', this.get('type'));
+    const schema = this.store.getById('schema', this.type);
     return schema;
   }),
 
   validationErrors(ignoreFields) {
-    const intl = this.get('intl');
+    const intl = this.intl;
 
     const errors = [];
-    const originalType = this.get('type');
+    const originalType = this.type;
     if ( !originalType ) {
       console.warn('No type found to validate', this);
       return [];
     }
 
-    const type = normalizeType(originalType, this.get('store'));
-    const schema = this.get('store').getById('schema', type);
+    const type = normalizeType(originalType, this.store);
+    const schema = this.store.getById('schema', type);
 
     if ( !schema ) {
       console.warn('No schema found to validate', type, this);
