@@ -1,6 +1,9 @@
-import Ember from 'ember';
+import { get } from '@ember/object';
+import { typeOf } from '@ember/utils';
+import { isArray } from '@ember/array';
+import Mixin from '@ember/object/mixin';
 
-var Serializable = Ember.Mixin.create({
+var Serializable = Mixin.create({
   serialize: function(depth) {
     depth = depth || 0;
     var output;
@@ -10,7 +13,7 @@ var Serializable = Ember.Mixin.create({
       return null;
     }
 
-    if ( Ember.isArray(this) )
+    if ( isArray(this) )
     {
       output = this.map(function(item) {
         return recurse(item,depth+1);
@@ -33,7 +36,7 @@ var Serializable = Ember.Mixin.create({
         return null;
       }
 
-      if ( Ember.isArray(obj) )
+      if ( isArray(obj) )
       {
         return obj.map(function(item) {
           return recurse(item, depth+1);
@@ -64,12 +67,12 @@ var Serializable = Ember.Mixin.create({
   reservedKeys: ['reservedKeys','constructor','container','store','isInstance','isDestroyed','isDestroying','concatenatedProperties','cache','factoryCache','validationCache','store'],
 
   allKeys: function() {
-    var reserved = this.get('reservedKeys');
+    var reserved = this.reservedKeys;
 
     var out = Object.keys(this).filter((k) => {
       return k.charAt(0) !== '_' &&
         reserved.indexOf(k) === -1 &&
-        Ember.typeOf(Ember.get(this,k)) !== 'function';
+        typeOf(get(this,k)) !== 'function';
     });
 
     return out;

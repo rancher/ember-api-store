@@ -13,16 +13,16 @@ function parseType(type) {
 
 var Schema = Resource.extend({
   getFieldNames() {
-    return Object.keys(get(this, 'resourceFields'));
+    return Object.keys(this.resourceFields);
   },
 
   typeifyFields: computed('id', function() {
     // Schemas are special..
-    if ( get(this, 'id') === 'schema' ) {
+    if ( this.id === 'schema' ) {
       return [];
     }
 
-    let fields = get(this, 'resourceFields')||{};
+    let fields = this.resourceFields||{};
     let keys = Object.keys(fields);
 
     let out = keys.filter(function(k) {
@@ -40,7 +40,7 @@ var Schema = Resource.extend({
   }),
 
   getLoadDefaults(record, forceOverwrite=false) {
-    var fields = get(this, 'resourceFields');
+    var fields = this.resourceFields;
 
     Object.keys(fields).forEach( key => {
       var field = fields[key];
@@ -63,7 +63,7 @@ var Schema = Resource.extend({
 
   getCreateDefaults(more) {
     var out = {};
-    var fields = get(this, 'resourceFields');
+    var fields = this.resourceFields;
 
     Object.keys(fields).forEach(function(key) {
       var field = fields[key];
@@ -89,7 +89,7 @@ var Schema = Resource.extend({
   },
 
   optionsFor(field) {
-    let obj = get(this, 'resourceFields')[field];
+    let obj = this.resourceFields[field];
     if ( obj && obj.options ) {
       return (obj.options||[]).slice();
     }
@@ -98,7 +98,7 @@ var Schema = Resource.extend({
   },
 
   typesFor(fieldName) {
-    const field = get(this, 'resourceFields')[fieldName];
+    const field = this.resourceFields[fieldName];
     if ( !field || !field.type ) {
       return [];
     }
@@ -130,7 +130,7 @@ var Schema = Resource.extend({
   },
 
   referencedTypeFor(field) {
-    const obj = get(this, 'resourceFields')[field];
+    const obj = this.resourceFields[field];
     const type = obj.type;
     const match = type.match(/^reference\[([^\]]*)\]$/);
 

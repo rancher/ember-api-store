@@ -1,4 +1,4 @@
-import Ember from 'ember';
+import { isArray } from '@ember/array';
 
 export function urlOptions(url,opt,cls) {
   opt = opt || {};
@@ -10,7 +10,7 @@ export function urlOptions(url,opt,cls) {
     var keys = Object.keys(opt.filter);
     keys.forEach(function(key) {
       var vals = opt.filter[key];
-      if ( !Ember.isArray(vals) )
+      if ( !isArray(vals) )
       {
         vals = [vals];
       }
